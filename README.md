@@ -1,24 +1,18 @@
-# README
+# Music Theory
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Interactive scale / chord / note visualizer for guitar and piano, with a notation staff.
+Rails-served, vanilla Canvas + Stimulus front-end. No database — every view is a shareable URL.
 
-Things you may want to cover:
+## Develop
+- `bin/rails server` → http://localhost:3000
+- JS unit tests: `npx vitest run`
+- Rails tests: `bin/rails test` and `bin/rails test:system`
 
-* Ruby version
+## URLs
+- `/guitar/scale/C/dorian`
+- `/piano/chord/A/maj7`
+- `/guitar/notes/E`
 
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+## Adding a scale/chord/instrument
+Update BOTH the JS table (`app/javascript/theory/*` or `instruments/config.js`)
+AND the matching allow-list constant in `app/controllers/views_controller.rb`.
