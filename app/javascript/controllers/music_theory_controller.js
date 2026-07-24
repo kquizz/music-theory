@@ -109,7 +109,7 @@ export default class extends Controller {
 
     ctx.save()
     ctx.translate(0, (dims && dims.height ? dims.height : 220))
-    staff.draw(ctx, notes, { accidental: this.accidental })
+    staff.draw(ctx, notes, { accidental: this.accidental, clef: config.clef || 'treble' })
     ctx.restore()
   }
 

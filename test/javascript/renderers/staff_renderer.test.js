@@ -42,4 +42,9 @@ describe('ascendingPlacements', () => {
     const p = ascendingPlacements(['G', 'Bb', 'D'])
     expect(p[1].accidental).toBe('b')
   })
+
+  it('keeps a chromatic run compact: sharps share the natural line, no octave jump', () => {
+    const abs = ascendingPlacements(['C', 'C#', 'D', 'D#', 'E']).map((p) => p.abs)
+    expect(abs).toEqual([0, 0, 1, 1, 2]) // C# on C's line, D# on D's line
+  })
 })

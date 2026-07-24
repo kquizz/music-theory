@@ -1,8 +1,9 @@
-import { numberToNote } from 'theory/notes'
+import { numberToNote, noteToNumber } from 'theory/notes'
 import { colorForDegree } from 'renderers/palette'
 
 const LETTER_STEP = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 }
-const LAYOUT = { x: 30, y: 40, lineGap: 12, width: 360 }
+const LAYOUT = { x: 30, y: 40, lineGap: 12, width: 360, clefWidth: 34 }
+const CLEF_GLYPH = { treble: '𝄞', bass: '𝄢' }
 
 // Pure: split a note name into staff letter/step + accidental glyph.
 export function staffPlacement(noteName) {
@@ -12,19 +13,20 @@ export function staffPlacement(noteName) {
   return { letter, step: LETTER_STEP[letter], accidental }
 }
 
-// Pure: voice an ordered list of note names as an ASCENDING melodic line, so a
-// chord/scale climbs the staff instead of wrapping into a single octave. `abs`
-// is a diatonic index (7 per octave); the first note sits in octave 0 and each
-// subsequent note is bumped up whole octaves until it is strictly higher.
+// Pure: voice an ordered list of note names as an ASCENDING line, so a chord or
+// scale climbs the staff. Octave placement is decided by actual PITCH (semitones),
+// not diatonic step — so a chromatic run keeps sharps/flats on their natural's
+// line (C# shares C's line with a ♯) instead of jumping an octave per accidental.
+// `abs` is the diatonic staff index (7 per octave); C4 = 0, E4 (bottom line) = 2.
 export function ascendingPlacements(noteNames) {
-  let prevAbs = -Infinity
+  let prevPitch = -Infinity
+  let octave = 0
   return noteNames.map((name) => {
     const { letter, step, accidental } = staffPlacement(name)
-    let octave = 0
-    while (octave * 7 + step <= prevAbs) octave += 1
-    const abs = octave * 7 + step
-    prevAbs = abs
-    return { name, letter, step, accidental, abs }
+    const pitchClass = noteToNumber(name)
+    while (octave * 12 + pitchClass <= prevPitch) octave += 1
+    prevPitch = octave * 12 + pitchClass
+    return { name, letter, step, accidental, abs: octave * 7 + step }
   })
 }
 
@@ -40,8 +42,9 @@ function ledgerPositions(abs) {
   return ledgers
 }
 
-export function draw(ctx, notes, { accidental = 'sharp' } = {}) {
-  const width = LAYOUT.x + LAYOUT.width + 20
+export function draw(ctx, notes, { accidental = 'sharp', clef = 'treble' } = {}) {
+  const staffLeft = LAYOUT.x + LAYOUT.clefWidth
+  const width = staffLeft + LAYOUT.width + 20
   const height = LAYOUT.y + 8 * LAYOUT.lineGap + 40
   const bottomLineY = LAYOUT.y + 4 * LAYOUT.lineGap // E4, bottom staff line
   const absToY = (abs) => bottomLineY - (abs - 2) * (LAYOUT.lineGap / 2)
@@ -52,20 +55,26 @@ export function draw(ctx, notes, { accidental = 'sharp' } = {}) {
   for (let i = 0; i < 5; i++) {
     const y = LAYOUT.y + i * LAYOUT.lineGap
     ctx.beginPath()
-    ctx.moveTo(LAYOUT.x, y)
-    ctx.lineTo(LAYOUT.x + LAYOUT.width, y)
+    ctx.moveTo(staffLeft, y)
+    ctx.lineTo(staffLeft + LAYOUT.width, y)
     ctx.stroke()
   }
 
-  const names = notes.map((n) => numberToNote(n.semitone, accidental))
-  const placements = ascendingPlacements(names)
-  const spacing = (LAYOUT.width - 60) / Math.max(notes.length, 1)
-
+  // clef glyph, vertically centered on the staff
+  ctx.fillStyle = '#222'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
+  ctx.font = `${LAYOUT.lineGap * 5}px serif`
+  ctx.fillText(CLEF_GLYPH[clef] || CLEF_GLYPH.treble,
+    LAYOUT.x + LAYOUT.clefWidth / 2, LAYOUT.y + 2 * LAYOUT.lineGap)
+
+  const names = notes.map((n) => numberToNote(n.semitone, accidental))
+  const placements = ascendingPlacements(names)
+  const spacing = (LAYOUT.width - 40) / Math.max(notes.length, 1)
+
   ctx.font = '14px serif'
   placements.forEach((p, i) => {
-    const x = LAYOUT.x + 40 + i * spacing
+    const x = staffLeft + 30 + i * spacing
     const y = absToY(p.abs)
 
     ctx.strokeStyle = '#333'
