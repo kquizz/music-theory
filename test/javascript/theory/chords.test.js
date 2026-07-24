@@ -13,11 +13,26 @@ describe('chordNotes', () => {
   })
 
   it('builds A dominant 7', () => {
-    expect(semis('A', '7')).toEqual([9, 1, 4, 7])
+    expect(semis('A', 'dom7')).toEqual([9, 1, 4, 7])
   })
 
   it('builds C major 7', () => {
     expect(semis('C', 'maj7')).toEqual([0, 4, 7, 11])
+  })
+
+  it('folds extended intervals into pitch classes (C9 = C E G Bb D)', () => {
+    expect(semis('C', 'dom9')).toEqual([0, 4, 7, 10, 2])
+  })
+
+  it('builds a power chord (root + fifth only)', () => {
+    expect(semis('C', 'power5')).toEqual([0, 7])
+  })
+
+  it('uses only URL-safe, non-integer keys', () => {
+    for (const key of Object.keys(CHORDS)) {
+      expect(key).toMatch(/^[a-z0-9_]+$/)
+      expect(key).not.toMatch(/^\d+$/)
+    }
   })
 
   it('tags degrees 0..n', () => {

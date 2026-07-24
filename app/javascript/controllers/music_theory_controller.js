@@ -54,13 +54,14 @@ export default class extends Controller {
     const table = mode === 'chord' ? CHORDS : mode === 'scale' ? SCALES : {}
     this.nameTarget.innerHTML = ''
     Object.keys(table).forEach((key) => {
+      if (table[key].alias) return
       const opt = document.createElement('option')
       opt.value = key
       opt.textContent = table[key].name
       this.nameTarget.appendChild(opt)
     })
     if (mode !== 'notes' && (!this.nameValue || !table[this.nameValue])) {
-      this.nameValue = Object.keys(table)[0]
+      this.nameValue = Object.keys(table).find((key) => !table[key].alias)
     }
     if (mode !== 'notes') this.nameTarget.value = this.nameValue
   }
@@ -95,14 +96,15 @@ export default class extends Controller {
   }
 
   pushUrl() {
+    const enc = encodeURIComponent
     let path
-    if (this.modeValue === 'notes') path = `/${this.instrumentValue}/notes/${this.rootValue}`
-    else path = `/${this.instrumentValue}/${this.modeValue}/${this.rootValue}/${this.nameValue}`
+    if (this.modeValue === 'notes') path = `/${this.instrumentValue}/notes/${enc(this.rootValue)}`
+    else path = `/${this.instrumentValue}/${this.modeValue}/${enc(this.rootValue)}/${enc(this.nameValue)}`
     window.history.pushState({}, '', path)
   }
 
   syncFromLocation() {
-    const parts = window.location.pathname.split('/').filter(Boolean)
+    const parts = window.location.pathname.split('/').filter(Boolean).map(decodeURIComponent)
     if (parts.length === 0) return
     const [instrument, mode, root, name] = parts
     this.instrumentValue = instrument

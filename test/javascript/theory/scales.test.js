@@ -34,4 +34,26 @@ describe('scaleNotes', () => {
       expect(SCALES[key].intervals[0]).toBe(0)
     }
   })
+
+  it('builds C minor blues', () => {
+    expect(semis('C', 'blues')).toEqual([0, 3, 5, 6, 7, 10])
+  })
+
+  it('builds C whole tone', () => {
+    expect(semis('C', 'whole_tone')).toEqual([0, 2, 4, 6, 8, 10])
+  })
+
+  it('builds C diminished (whole-half) as an 8-note scale', () => {
+    expect(semis('C', 'diminished_wh')).toEqual([0, 2, 3, 5, 6, 8, 9, 11])
+  })
+
+  it('marks minor as an alias (hidden from the dropdown) but keeps it resolvable', () => {
+    expect(SCALES.minor.alias).toBe(true)
+    expect(SCALES.aeolian.alias).toBeUndefined()
+    expect(semis('C', 'minor')).toEqual(semis('C', 'aeolian'))
+  })
+
+  it('uses only URL-safe keys', () => {
+    for (const key of Object.keys(SCALES)) expect(key).toMatch(/^[a-z0-9_]+$/)
+  })
 })

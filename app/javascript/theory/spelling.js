@@ -21,9 +21,9 @@ const MAJOR_ACCIDENTAL = [
 
 const MINOR_SCALES = new Set([
   'dorian', 'phrygian', 'aeolian', 'minor', 'locrian',
-  'minor_pentatonic', 'harmonic_minor', 'melodic_minor',
+  'minor_pentatonic', 'blues', 'harmonic_minor', 'melodic_minor', 'hungarian_minor',
 ])
-const MINOR_CHORDS = new Set(['min', 'm6', 'm7', 'dim', 'dim7', 'm7b5'])
+const MINOR_CHORDS = new Set(['min', 'm6', 'm7', 'mmaj7', 'm9', 'dim', 'dim7', 'm7b5'])
 
 function isMinorFamily(mode, name) {
   if (mode === 'scale') return MINOR_SCALES.has(name)
