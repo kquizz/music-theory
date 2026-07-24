@@ -12,12 +12,14 @@ import * as staff from 'renderers/staff_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
+    this.octaves = 1
     this.accidentalOverridden = false
     this.accidental = this.keyAccidental()
+    this.updateOctavesLabel()
     this.populateInstrumentOptions()
     this.instrumentTarget.value = this.instrumentValue
     this.modeTarget.value = this.modeValue
@@ -43,8 +45,28 @@ export default class extends Controller {
     this.render()
   }
 
+  toggleOctaves() {
+    this.octaves = this.octaves === 1 ? 2 : 1
+    this.updateOctavesLabel()
+    this.render()
+  }
+
+  updateOctavesLabel() {
+    if (this.hasOctavesTarget) this.octavesTarget.textContent = `${this.octaves} Octave${this.octaves > 1 ? 's' : ''}`
+  }
+
   keyAccidental() {
     return defaultAccidental({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
+  }
+
+  // Note set for the current view, repeated over the selected octave count.
+  // Scales cap on the octave root (C..B C..B C); chords just repeat.
+  octaveNotes() {
+    const base = noteSet({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
+    if (this.octaves === 1) return base
+    const repeated = [...base, ...base.map((n) => ({ ...n }))]
+    if (this.modeValue === 'scale') repeated.push({ ...base[0] })
+    return repeated
   }
 
   populateInstrumentOptions() {
@@ -88,7 +110,7 @@ export default class extends Controller {
 
   render() {
     const config = INSTRUMENTS[this.instrumentValue]
-    const notes = noteSet({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
+    const notes = this.octaveNotes()
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
 
