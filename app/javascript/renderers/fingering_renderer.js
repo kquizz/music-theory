@@ -25,7 +25,7 @@ export function threeValveFingering(pitchClass) {
   return THREE_VALVE[((pitchClass % 12) + 12) % 12]
 }
 
-const LAYOUT = { x: 20, y: 30, cardWidth: 74, cardGap: 12, valveRadius: 11, valveGap: 6 }
+const LAYOUT = { x: 20, y: 30, cardWidth: 74, cardGap: 26, valveRadius: 11, valveGap: 6 }
 
 // `notes` here are already the WRITTEN (transposed) notes for the instrument.
 export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
@@ -36,10 +36,27 @@ export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
+  const valveY = LAYOUT.y + 40
+
   notes.forEach((note, i) => {
-    const cx = LAYOUT.x + i * (LAYOUT.cardWidth + LAYOUT.cardGap) + LAYOUT.cardWidth / 2
+    const cardLeft = LAYOUT.x + i * (LAYOUT.cardWidth + LAYOUT.cardGap)
+    const cx = cardLeft + LAYOUT.cardWidth / 2
     const pressed = threeValveFingering(note.semitone)
     const color = colorForDegree(note.degree)
+
+    // divider between this fingering group and the previous one
+    if (i > 0) {
+      const dividerX = cardLeft - LAYOUT.cardGap / 2
+      ctx.strokeStyle = '#ddd'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(dividerX, LAYOUT.y - 8)
+      ctx.lineTo(dividerX, valveY + LAYOUT.valveRadius + 8)
+      ctx.stroke()
+      ctx.fillStyle = '#bbb'
+      ctx.font = '12px sans-serif'
+      ctx.fillText('•', dividerX, valveY)
+    }
 
     // written note name, degree-colored
     ctx.fillStyle = color
@@ -49,7 +66,6 @@ export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
     // three valves
     const totalW = 3 * (LAYOUT.valveRadius * 2) + 2 * LAYOUT.valveGap
     const startX = cx - totalW / 2 + LAYOUT.valveRadius
-    const valveY = LAYOUT.y + 40
     for (let v = 1; v <= (config.valves || 3); v++) {
       const vx = startX + (v - 1) * (LAYOUT.valveRadius * 2 + LAYOUT.valveGap)
       const isPressed = pressed.includes(v)
