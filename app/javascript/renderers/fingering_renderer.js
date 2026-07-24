@@ -65,63 +65,78 @@ export function absolutePitches(notes, baseC = 60) {
   })
 }
 
-const LAYOUT = { x: 20, y: 30, cardWidth: 74, cardGap: 26, valveRadius: 11, valveGap: 6 }
+const LAYOUT = {
+  x: 20, y: 30, cardWidth: 74, cardGap: 26, valveRadius: 11, valveGap: 6, rowStride: 110,
+}
 
-export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
-  const width = LAYOUT.x * 2 + notes.length * (LAYOUT.cardWidth + LAYOUT.cardGap)
-  const height = LAYOUT.y + 150
-  const valveY = LAYOUT.y + 40
-  const midis = absolutePitches(notes)
+function drawCard(ctx, config, note, midi, cardLeft, topY, accidental, showDivider) {
+  const cx = cardLeft + LAYOUT.cardWidth / 2
+  const valveY = topY + 40
+  const pressed = trumpetFingering(midi)
+  const color = colorForDegree(note.degree)
+
+  if (showDivider) {
+    const dividerX = cardLeft - LAYOUT.cardGap / 2
+    ctx.strokeStyle = '#ddd'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(dividerX, topY - 8)
+    ctx.lineTo(dividerX, valveY + LAYOUT.valveRadius + 8)
+    ctx.stroke()
+    ctx.fillStyle = '#bbb'
+    ctx.font = '12px sans-serif'
+    ctx.fillText('•', dividerX, valveY)
+  }
+
+  ctx.fillStyle = color
+  ctx.font = 'bold 18px sans-serif'
+  ctx.fillText(numberToNote(note.semitone, accidental), cx, topY)
+
+  const totalW = 3 * (LAYOUT.valveRadius * 2) + 2 * LAYOUT.valveGap
+  const startX = cx - totalW / 2 + LAYOUT.valveRadius
+  for (let v = 1; v <= (config.valves || 3); v++) {
+    const vx = startX + (v - 1) * (LAYOUT.valveRadius * 2 + LAYOUT.valveGap)
+    const isPressed = pressed.includes(v)
+    ctx.beginPath()
+    ctx.arc(vx, valveY, LAYOUT.valveRadius, 0, Math.PI * 2)
+    ctx.fillStyle = isPressed ? color : '#fff'
+    ctx.fill()
+    ctx.strokeStyle = '#333'
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+    ctx.fillStyle = isPressed ? '#fff' : '#999'
+    ctx.font = '11px sans-serif'
+    ctx.fillText(String(v), vx, valveY)
+  }
+
+  if (pressed.length === 0) {
+    ctx.fillStyle = '#666'
+    ctx.font = 'italic 11px sans-serif'
+    ctx.fillText('open', cx, valveY + LAYOUT.valveRadius + 16)
+  }
+}
+
+// `groups` is one note array per octave — each becomes its own row of cards, so
+// two octaves stack on two lines. Pitches are numbered continuously across groups
+// so the upper row gets its correct upper-register fingerings.
+export function draw(ctx, config, groups, { accidental = 'sharp' } = {}) {
+  const midis = absolutePitches(groups.flat())
+  const maxCards = Math.max(...groups.map((g) => g.length), 1)
+  const width = LAYOUT.x * 2 + maxCards * (LAYOUT.cardWidth + LAYOUT.cardGap)
+  const height = LAYOUT.y + groups.length * LAYOUT.rowStride
 
   ctx.save()
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  notes.forEach((note, i) => {
-    const cardLeft = LAYOUT.x + i * (LAYOUT.cardWidth + LAYOUT.cardGap)
-    const cx = cardLeft + LAYOUT.cardWidth / 2
-    const pressed = trumpetFingering(midis[i])
-    const color = colorForDegree(note.degree)
-
-    if (i > 0) {
-      const dividerX = cardLeft - LAYOUT.cardGap / 2
-      ctx.strokeStyle = '#ddd'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(dividerX, LAYOUT.y - 8)
-      ctx.lineTo(dividerX, valveY + LAYOUT.valveRadius + 8)
-      ctx.stroke()
-      ctx.fillStyle = '#bbb'
-      ctx.font = '12px sans-serif'
-      ctx.fillText('•', dividerX, valveY)
-    }
-
-    ctx.fillStyle = color
-    ctx.font = 'bold 18px sans-serif'
-    ctx.fillText(numberToNote(note.semitone, accidental), cx, LAYOUT.y)
-
-    const totalW = 3 * (LAYOUT.valveRadius * 2) + 2 * LAYOUT.valveGap
-    const startX = cx - totalW / 2 + LAYOUT.valveRadius
-    for (let v = 1; v <= (config.valves || 3); v++) {
-      const vx = startX + (v - 1) * (LAYOUT.valveRadius * 2 + LAYOUT.valveGap)
-      const isPressed = pressed.includes(v)
-      ctx.beginPath()
-      ctx.arc(vx, valveY, LAYOUT.valveRadius, 0, Math.PI * 2)
-      ctx.fillStyle = isPressed ? color : '#fff'
-      ctx.fill()
-      ctx.strokeStyle = '#333'
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-      ctx.fillStyle = isPressed ? '#fff' : '#999'
-      ctx.font = '11px sans-serif'
-      ctx.fillText(String(v), vx, valveY)
-    }
-
-    if (pressed.length === 0) {
-      ctx.fillStyle = '#666'
-      ctx.font = 'italic 11px sans-serif'
-      ctx.fillText('open', cx, valveY + LAYOUT.valveRadius + 16)
-    }
+  let idx = 0
+  groups.forEach((group, row) => {
+    const topY = LAYOUT.y + row * LAYOUT.rowStride
+    group.forEach((note, j) => {
+      const cardLeft = LAYOUT.x + j * (LAYOUT.cardWidth + LAYOUT.cardGap)
+      drawCard(ctx, config, note, midis[idx], cardLeft, topY, accidental, j > 0)
+      idx += 1
+    })
   })
 
   ctx.restore()

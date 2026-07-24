@@ -8,6 +8,7 @@ import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
 import * as fingering from 'renderers/fingering_renderer'
 import * as staff from 'renderers/staff_renderer'
+import * as circle from 'renderers/circle_of_fifths_renderer'
 
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
@@ -28,11 +29,35 @@ export default class extends Controller {
     if (this.modeValue !== 'notes') this.nameTarget.value = this.nameValue
     this.popstateHandler = () => this.syncFromLocation()
     window.addEventListener('popstate', this.popstateHandler)
+    this.clickHandler = (e) => this.onCanvasClick(e)
+    this.canvasTarget.addEventListener('click', this.clickHandler)
     this.render()
   }
 
   disconnect() {
     window.removeEventListener('popstate', this.popstateHandler)
+    this.canvasTarget.removeEventListener('click', this.clickHandler)
+  }
+
+  // In circle-of-fifths mode, clicking a key jumps the app to that key's scale
+  // (outer ring = major, inner ring = relative minor).
+  onCanvasClick(event) {
+    if (this.modeValue !== 'circle') return
+    const canvas = this.canvasTarget
+    const rect = canvas.getBoundingClientRect()
+    const mx = (event.clientX - rect.left) * (canvas.width / rect.width)
+    const my = (event.clientY - rect.top) * (canvas.height / rect.height)
+    const geo = circle.geometry()
+    const hit = circle.hitTest(mx - geo.cx, my - geo.cy)
+    if (!hit) return
+    this.modeValue = 'scale'
+    this.rootValue = hit.isMinor ? hit.entry.minorRoot : hit.entry.root
+    this.nameValue = hit.isMinor ? 'aeolian' : 'major'
+    this.modeTarget.value = 'scale'
+    this.rootTarget.value = this.rootValue
+    this.populateNameOptions()
+    this.nameTarget.value = this.nameValue
+    this.update()
   }
 
   onInstrument() { this.instrumentValue = this.instrumentTarget.value; this.update() }
@@ -80,13 +105,13 @@ export default class extends Controller {
   }
 
   captureName() {
-    if (this.modeValue === 'notes') { this.nameValue = ''; return }
+    if (this.modeValue === 'notes' || this.modeValue === 'circle') { this.nameValue = ''; return }
     this.nameValue = this.nameTarget.value
   }
 
   populateNameOptions() {
     const mode = this.modeValue
-    this.nameTarget.disabled = mode === 'notes'
+    this.nameTarget.disabled = mode === 'notes' || mode === 'circle'
     const table = mode === 'chord' ? CHORDS : mode === 'scale' ? SCALES : {}
     this.nameTarget.innerHTML = ''
     Object.keys(table).forEach((key) => {
@@ -96,10 +121,11 @@ export default class extends Controller {
       opt.textContent = table[key].name
       this.nameTarget.appendChild(opt)
     })
-    if (mode !== 'notes' && (!this.nameValue || !table[this.nameValue])) {
+    const usesName = mode === 'scale' || mode === 'chord'
+    if (usesName && (!this.nameValue || !table[this.nameValue])) {
       this.nameValue = Object.keys(table).find((key) => !table[key].alias)
     }
-    if (mode !== 'notes') this.nameTarget.value = this.nameValue
+    if (usesName) this.nameTarget.value = this.nameValue
   }
 
   update() {
@@ -110,30 +136,41 @@ export default class extends Controller {
 
   render() {
     const config = INSTRUMENTS[this.instrumentValue]
-    const groups = this.octaveGroups()
-    const flat = groups.flat()
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
 
-    const drawInstrument = RENDERERS[config.type] || fretboard.draw
     canvas.width = 900
     canvas.height = 560
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+    if (this.modeValue === 'circle') {
+      ctx.save()
+      circle.draw(ctx, { highlightRoot: this.rootValue })
+      ctx.restore()
+      return
+    }
+
+    const groups = this.octaveGroups()
+    const flat = groups.flat()
     ctx.save()
-    const dims = drawInstrument(ctx, config, flat, { accidental: this.accidental })
+    // Brass wraps fingerings into one row per octave; other views take the flat line.
+    const dims = config.type === 'brass'
+      ? fingering.draw(ctx, config, groups, { accidental: this.accidental })
+      : (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, { accidental: this.accidental })
     ctx.restore()
 
     ctx.save()
     ctx.translate(0, (dims && dims.height ? dims.height : 220))
-    staff.draw(ctx, groups, { accidental: this.accidental, clef: config.clef || 'treble' })
+    // Notes stay on a single staff — the second octave simply sits higher.
+    staff.draw(ctx, [flat], { accidental: this.accidental, clef: config.clef || 'treble' })
     ctx.restore()
   }
 
   pushUrl() {
     const enc = encodeURIComponent
     let path
-    if (this.modeValue === 'notes') path = `/${this.instrumentValue}/notes/${enc(this.rootValue)}`
+    if (this.modeValue === 'circle') path = '/circle'
+    else if (this.modeValue === 'notes') path = `/${this.instrumentValue}/notes/${enc(this.rootValue)}`
     else path = `/${this.instrumentValue}/${this.modeValue}/${enc(this.rootValue)}/${enc(this.nameValue)}`
     window.history.pushState({}, '', path)
   }
@@ -141,6 +178,13 @@ export default class extends Controller {
   syncFromLocation() {
     const parts = window.location.pathname.split('/').filter(Boolean).map(decodeURIComponent)
     if (parts.length === 0) return
+    if (parts[0] === 'circle') {
+      this.modeValue = 'circle'
+      this.modeTarget.value = 'circle'
+      this.populateNameOptions()
+      this.render()
+      return
+    }
     const [instrument, mode, root, name] = parts
     this.instrumentValue = instrument
     this.modeValue = mode === 'notes' ? 'notes' : mode
