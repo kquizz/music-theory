@@ -9,6 +9,7 @@ export default defineConfig({
       { find: /^theory\//, replacement: `${js('theory')}/` },
       { find: /^instruments\//, replacement: `${js('instruments')}/` },
       { find: /^renderers\//, replacement: `${js('renderers')}/` },
+      { find: /^audio\//, replacement: `${js('audio')}/` },
     ],
   },
   test: { environment: 'node', include: ['test/javascript/**/*.test.js'] },

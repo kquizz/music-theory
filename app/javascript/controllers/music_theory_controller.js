@@ -4,6 +4,7 @@ import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { diatonicChords } from 'theory/diatonic'
+import { play } from 'audio/player'
 import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
@@ -15,7 +16,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'play']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -72,6 +73,16 @@ export default class extends Controller {
   }
 
   onTuning() { this.tuningKey = this.tuningTarget.value; this.render() }
+
+  // Sound the current note set: chords play together, scales/notes arpeggiate.
+  // The AudioContext is created lazily on this click (a user gesture).
+  onPlay() {
+    if (!this.audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext
+      this.audioCtx = new Ctx()
+    }
+    play(this.audioCtx, this.octaveGroups().flat(), { mode: this.modeValue })
+  }
   onMode() { this.modeValue = this.modeTarget.value; this.populateNameOptions(); this.captureName(); this.update() }
   onRoot() { this.rootValue = this.rootTarget.value; this.update() }
   onName() { this.captureName(); this.update() }
