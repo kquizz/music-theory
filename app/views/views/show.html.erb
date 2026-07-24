@@ -4,5 +4,29 @@
      data-music-theory-mode-value="<%= @mode %>"
      data-music-theory-root-value="<%= @root %>"
      data-music-theory-name-value="<%= @name %>">
+
+  <div class="controls">
+    <select data-music-theory-target="instrument" data-action="change->music-theory#onInstrument">
+      <option value="guitar">Guitar</option>
+      <option value="piano">Piano</option>
+    </select>
+
+    <select data-music-theory-target="mode" data-action="change->music-theory#onMode">
+      <option value="scale">Scales</option>
+      <option value="chord">Chords</option>
+      <option value="notes">Notes</option>
+    </select>
+
+    <select data-music-theory-target="root" data-action="change->music-theory#onRoot">
+      <% %w[C C# D D# E F F# G G# A A# B].each do |n| %>
+        <option value="<%= n %>"><%= n %></option>
+      <% end %>
+    </select>
+
+    <select data-music-theory-target="name" data-action="change->music-theory#onName"></select>
+
+    <button data-action="click->music-theory#toggleAccidental" data-music-theory-target="accidental">♯ / ♭</button>
+  </div>
+
   <canvas data-music-theory-target="canvas"></canvas>
 </div>
