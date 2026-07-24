@@ -4,9 +4,13 @@ import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { defaultAccidental } from 'theory/spelling'
+import { normalize } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
+import * as fingering from 'renderers/fingering_renderer'
 import * as staff from 'renderers/staff_renderer'
+
+const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
   static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental']
@@ -15,6 +19,7 @@ export default class extends Controller {
   connect() {
     this.accidentalOverridden = false
     this.accidental = this.keyAccidental()
+    this.populateInstrumentOptions()
     this.instrumentTarget.value = this.instrumentValue
     this.modeTarget.value = this.modeValue
     this.rootTarget.value = this.rootValue
@@ -41,6 +46,16 @@ export default class extends Controller {
 
   keyAccidental() {
     return defaultAccidental({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
+  }
+
+  populateInstrumentOptions() {
+    this.instrumentTarget.innerHTML = ''
+    Object.keys(INSTRUMENTS).forEach((key) => {
+      const opt = document.createElement('option')
+      opt.value = key
+      opt.textContent = INSTRUMENTS[key].name
+      this.instrumentTarget.appendChild(opt)
+    })
   }
 
   captureName() {
@@ -74,13 +89,16 @@ export default class extends Controller {
 
   render() {
     const config = INSTRUMENTS[this.instrumentValue]
-    const notes = noteSet({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
+    const concertNotes = noteSet({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
+    // Transposing instruments read WRITTEN pitches; concert instruments read as-is.
+    const transpose = config.transpose || 0
+    const notes = transpose
+      ? concertNotes.map((n) => ({ ...n, semitone: normalize(n.semitone + transpose) }))
+      : concertNotes
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
 
-    // Size for the instrument view first, then reserve space for the staff below.
-    const drawInstrument = config.type === 'keyboard' ? keyboard.draw : fretboard.draw
-    // Measure by drawing to an offscreen pass would be ideal; instead use fixed generous canvas.
+    const drawInstrument = RENDERERS[config.type] || fretboard.draw
     canvas.width = 900
     canvas.height = 460
     ctx.clearRect(0, 0, canvas.width, canvas.height)

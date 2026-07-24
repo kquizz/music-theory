@@ -14,10 +14,17 @@ describe('INSTRUMENTS', () => {
     expect(INSTRUMENTS.piano.startNote).toBe('C')
   })
 
+  it('defines trumpet as a Bb brass instrument (written a major 2nd up)', () => {
+    expect(INSTRUMENTS.trumpet.type).toBe('brass')
+    expect(INSTRUMENTS.trumpet.transpose).toBe(2)
+    expect(INSTRUMENTS.trumpet.valves).toBe(3)
+    expect(INSTRUMENTS.trumpet.clef).toBe('treble')
+  })
+
   it('every instrument has a display name and a known renderer type', () => {
     for (const key of Object.keys(INSTRUMENTS)) {
       expect(typeof INSTRUMENTS[key].name).toBe('string')
-      expect(['fretboard', 'keyboard']).toContain(INSTRUMENTS[key].type)
+      expect(['fretboard', 'keyboard', 'brass']).toContain(INSTRUMENTS[key].type)
     }
   })
 })

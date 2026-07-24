@@ -29,8 +29,14 @@ class ViewsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-music-theory-mode-value=?]", "notes"
   end
 
+  test "trumpet is a valid instrument" do
+    get "/trumpet/scale/C/major"
+    assert_response :success
+    assert_select "[data-music-theory-instrument-value=?]", "trumpet"
+  end
+
   test "invalid instrument redirects to root" do
-    get "/tuba/scale/C/major"
+    get "/kazoo/scale/C/major"
     assert_redirected_to root_path
   end
 
