@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "music_theory",
+  "project_id": "6cd5d671-1956-4dc8-93b7-5c378ddad646"
+}
