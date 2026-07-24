@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus'
-import { INSTRUMENTS } from 'instruments/config'
+import { INSTRUMENTS, defaultTuningKey, tuningStrings } from 'instruments/config'
 import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
@@ -14,7 +14,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -25,6 +25,8 @@ export default class extends Controller {
     this.updateLabelsLabel()
     this.populateInstrumentOptions()
     this.instrumentTarget.value = this.instrumentValue
+    this.tuningKey = defaultTuningKey(INSTRUMENTS[this.instrumentValue])
+    this.populateTuningOptions()
     this.modeTarget.value = this.modeValue
     this.syncRootSpelling()
     this.populateNameOptions()
@@ -61,7 +63,14 @@ export default class extends Controller {
     this.update()
   }
 
-  onInstrument() { this.instrumentValue = this.instrumentTarget.value; this.update() }
+  onInstrument() {
+    this.instrumentValue = this.instrumentTarget.value
+    this.tuningKey = defaultTuningKey(INSTRUMENTS[this.instrumentValue])
+    this.populateTuningOptions()
+    this.update()
+  }
+
+  onTuning() { this.tuningKey = this.tuningTarget.value; this.render() }
   onMode() { this.modeValue = this.modeTarget.value; this.populateNameOptions(); this.captureName(); this.update() }
   onRoot() { this.rootValue = this.rootTarget.value; this.update() }
   onName() { this.captureName(); this.update() }
@@ -132,6 +141,31 @@ export default class extends Controller {
     })
   }
 
+  // Show the tuning dropdown only for fretboard instruments with named tunings;
+  // hide it entirely for keyboard/brass.
+  populateTuningOptions() {
+    if (!this.hasTuningTarget) return
+    const config = INSTRUMENTS[this.instrumentValue]
+    const tunings = config.tunings
+    if (!tunings) { this.tuningTarget.style.display = 'none'; return }
+    this.tuningTarget.style.display = ''
+    this.tuningTarget.innerHTML = ''
+    Object.keys(tunings).forEach((key) => {
+      const opt = document.createElement('option')
+      opt.value = key
+      opt.textContent = tunings[key].name
+      this.tuningTarget.appendChild(opt)
+    })
+    this.tuningTarget.value = this.tuningKey
+  }
+
+  // Config with the active tuning resolved into a flat `tuning` array for renderers.
+  effectiveConfig() {
+    const config = INSTRUMENTS[this.instrumentValue]
+    if (config.type !== 'fretboard') return config
+    return { ...config, tuning: tuningStrings(config, this.tuningKey) }
+  }
+
   captureName() {
     if (this.modeValue === 'notes') { this.nameValue = ''; return }
     this.nameValue = this.nameTarget.value
@@ -172,7 +206,7 @@ export default class extends Controller {
   }
 
   render() {
-    const config = INSTRUMENTS[this.instrumentValue]
+    const config = this.effectiveConfig()
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
 
@@ -233,6 +267,8 @@ export default class extends Controller {
     this.rootValue = root
     this.nameValue = name || ''
     this.instrumentTarget.value = this.instrumentValue
+    this.tuningKey = defaultTuningKey(INSTRUMENTS[this.instrumentValue])
+    this.populateTuningOptions()
     this.modeTarget.value = this.modeValue
     this.populateNameOptions()
     if (this.modeValue !== 'notes' && name) this.nameTarget.value = name
