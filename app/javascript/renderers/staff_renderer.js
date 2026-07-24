@@ -42,31 +42,28 @@ function ledgerPositions(abs) {
   return ledgers
 }
 
-export function draw(ctx, notes, { accidental = 'sharp', clef = 'treble' } = {}) {
+// Draw one 5-line staff (with clef + notes) whose top line is at `yTop`.
+function drawStaff(ctx, notes, yTop, { accidental, clef }) {
   const staffLeft = LAYOUT.x + LAYOUT.clefWidth
-  const width = staffLeft + LAYOUT.width + 20
-  const height = LAYOUT.y + 8 * LAYOUT.lineGap + 40
-  const bottomLineY = LAYOUT.y + 4 * LAYOUT.lineGap // E4, bottom staff line
+  const bottomLineY = yTop + 4 * LAYOUT.lineGap // E4, bottom staff line
   const absToY = (abs) => bottomLineY - (abs - 2) * (LAYOUT.lineGap / 2)
 
-  ctx.save()
   ctx.strokeStyle = '#333'
   ctx.lineWidth = 1
   for (let i = 0; i < 5; i++) {
-    const y = LAYOUT.y + i * LAYOUT.lineGap
+    const y = yTop + i * LAYOUT.lineGap
     ctx.beginPath()
     ctx.moveTo(staffLeft, y)
     ctx.lineTo(staffLeft + LAYOUT.width, y)
     ctx.stroke()
   }
 
-  // clef glyph, vertically centered on the staff
   ctx.fillStyle = '#222'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.font = `${LAYOUT.lineGap * 5}px serif`
   ctx.fillText(CLEF_GLYPH[clef] || CLEF_GLYPH.treble,
-    LAYOUT.x + LAYOUT.clefWidth / 2, LAYOUT.y + 2 * LAYOUT.lineGap)
+    LAYOUT.x + LAYOUT.clefWidth / 2, yTop + 2 * LAYOUT.lineGap)
 
   const names = notes.map((n) => numberToNote(n.semitone, accidental))
   const placements = ascendingPlacements(names)
@@ -96,6 +93,20 @@ export function draw(ctx, notes, { accidental = 'sharp', clef = 'treble' } = {})
       ctx.fillText(p.accidental, x - 12, y)
     }
   })
+
+  return staffLeft + LAYOUT.width + 20
+}
+
+// `systems` is an array of note arrays — one stacked staff per entry, so a
+// 2-octave scale puts each octave on its own line instead of climbing off the top.
+export function draw(ctx, systems, { accidental = 'sharp', clef = 'treble' } = {}) {
+  const stride = 9 * LAYOUT.lineGap // vertical space per staff (incl. ledger room)
+  let width = 0
+  ctx.save()
+  systems.forEach((notes, s) => {
+    const w = drawStaff(ctx, notes, LAYOUT.y + s * stride, { accidental, clef })
+    width = Math.max(width, w)
+  })
   ctx.restore()
-  return { width, height }
+  return { width, height: LAYOUT.y + systems.length * stride }
 }

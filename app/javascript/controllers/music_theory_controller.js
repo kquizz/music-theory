@@ -59,14 +59,14 @@ export default class extends Controller {
     return defaultAccidental({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
   }
 
-  // Note set for the current view, repeated over the selected octave count.
-  // Scales cap on the octave root (C..B C..B C); chords just repeat.
-  octaveNotes() {
+  // One note array per octave to display. The staff draws each on its own stacked
+  // staff; the instrument view flattens them into a single ascending line.
+  octaveGroups() {
     const base = noteSet({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
-    if (this.octaves === 1) return base
-    const repeated = [...base, ...base.map((n) => ({ ...n }))]
-    if (this.modeValue === 'scale') repeated.push({ ...base[0] })
-    return repeated
+    if (this.octaves === 1) return [base]
+    const second = base.map((n) => ({ ...n }))
+    if (this.modeValue === 'scale') second.push({ ...base[0] })
+    return [base, second]
   }
 
   populateInstrumentOptions() {
@@ -110,22 +110,23 @@ export default class extends Controller {
 
   render() {
     const config = INSTRUMENTS[this.instrumentValue]
-    const notes = this.octaveNotes()
+    const groups = this.octaveGroups()
+    const flat = groups.flat()
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
 
     const drawInstrument = RENDERERS[config.type] || fretboard.draw
     canvas.width = 900
-    canvas.height = 460
+    canvas.height = 560
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     ctx.save()
-    const dims = drawInstrument(ctx, config, notes, { accidental: this.accidental })
+    const dims = drawInstrument(ctx, config, flat, { accidental: this.accidental })
     ctx.restore()
 
     ctx.save()
     ctx.translate(0, (dims && dims.height ? dims.height : 220))
-    staff.draw(ctx, notes, { accidental: this.accidental, clef: config.clef || 'treble' })
+    staff.draw(ctx, groups, { accidental: this.accidental, clef: config.clef || 'treble' })
     ctx.restore()
   }
 
