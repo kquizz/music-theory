@@ -16,7 +16,12 @@ export const CIRCLE = [
   { major: 'F', root: 'F', minor: 'Dm', minorRoot: 'D', sig: '1♭' },
 ]
 
-const GEO = { cx: 250, cy: 190, outerR: 150, boundaryR: 100, holeR: 45 }
+// Bottom-right of the 900x560 canvas.
+const GEO = { cx: 700, cy: 400, outerR: 120, boundaryR: 80, holeR: 34 }
+
+export function geometry() {
+  return { ...GEO }
+}
 
 // Pure: circle index (0 = C at top) for an angle measured clockwise from top.
 export function indexFromAngle(angleRad) {
@@ -30,15 +35,24 @@ export function hitTest(dx, dy) {
   const dist = Math.hypot(dx, dy)
   if (dist < GEO.holeR || dist > GEO.outerR) return null
   const angle = Math.atan2(dx, -dy) // 0 at top, increasing clockwise
-  const entry = CIRCLE[indexFromAngle(angle)]
-  return { entry, isMinor: dist < GEO.boundaryR }
+  return { entry: CIRCLE[indexFromAngle(angle)], isMinor: dist < GEO.boundaryR }
 }
 
-export function geometry() {
-  return { ...GEO }
+function wedge(ctx, cx, cy, rOuter, rInner, a0, a1, fill) {
+  ctx.beginPath()
+  ctx.arc(cx, cy, rOuter, a0, a1)
+  ctx.arc(cx, cy, rInner, a1, a0, true)
+  ctx.closePath()
+  ctx.fillStyle = fill
+  ctx.fill()
+  ctx.strokeStyle = '#ccc'
+  ctx.lineWidth = 1
+  ctx.stroke()
 }
 
-export function draw(ctx, { highlightRoot } = {}) {
+// Draws the wheel, lighting the current key: the outer (major) wedge when
+// !highlightMinor, else the inner (minor) wedge, matched by root.
+export function draw(ctx, { highlightRoot, highlightMinor = false } = {}) {
   const { cx, cy, outerR, boundaryR, holeR } = GEO
   const seg = (Math.PI * 2) / 12
   const majorR = (outerR + boundaryR) / 2
@@ -49,44 +63,29 @@ export function draw(ctx, { highlightRoot } = {}) {
   ctx.textBaseline = 'middle'
 
   CIRCLE.forEach((entry, i) => {
-    const a0 = i * seg - seg / 2 - Math.PI / 2 // wedge start (canvas angle)
+    const a0 = i * seg - seg / 2 - Math.PI / 2
     const a1 = a0 + seg
-    const highlighted = entry.root === highlightRoot
+    const outerHi = !highlightMinor && entry.root === highlightRoot
+    const innerHi = highlightMinor && entry.minorRoot === highlightRoot
 
-    // wedge fill
-    ctx.beginPath()
-    ctx.arc(cx, cy, outerR, a0, a1)
-    ctx.arc(cx, cy, holeR, a1, a0, true)
-    ctx.closePath()
-    ctx.fillStyle = highlighted ? '#cfe3ff' : '#fff'
-    ctx.fill()
-    ctx.strokeStyle = '#ccc'
-    ctx.lineWidth = 1
-    ctx.stroke()
+    wedge(ctx, cx, cy, outerR, boundaryR, a0, a1, outerHi ? '#8ec3ff' : '#fff')
+    wedge(ctx, cx, cy, boundaryR, holeR, a0, a1, innerHi ? '#ffcf8a' : '#f6f6f6')
 
     const px = (r) => cx + r * Math.sin(i * seg)
     const py = (r) => cy - r * Math.cos(i * seg)
 
     ctx.fillStyle = '#111'
-    ctx.font = 'bold 17px sans-serif'
-    ctx.fillText(entry.major, px(majorR), py(majorR) - 6)
-    ctx.fillStyle = '#888'
-    ctx.font = '10px sans-serif'
-    ctx.fillText(entry.sig, px(majorR), py(majorR) + 9)
+    ctx.font = 'bold 14px sans-serif'
+    ctx.fillText(entry.major, px(majorR), py(majorR) - 5)
+    ctx.fillStyle = '#999'
+    ctx.font = '8px sans-serif'
+    ctx.fillText(entry.sig, px(majorR), py(majorR) + 8)
 
-    ctx.fillStyle = '#555'
-    ctx.font = '13px sans-serif'
+    ctx.fillStyle = '#666'
+    ctx.font = '10px sans-serif'
     ctx.fillText(entry.minor, px(minorR), py(minorR))
   })
 
-  // ring outlines
-  ctx.strokeStyle = '#999'
-  ;[outerR, boundaryR, holeR].forEach((r) => {
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.stroke()
-  })
-
   ctx.restore()
-  return { width: cx + outerR + 20, height: cy + outerR + 20 }
+  return { width: cx + outerR, height: cy + outerR }
 }

@@ -31,19 +31,19 @@ describe('indexFromAngle', () => {
 
 describe('hitTest', () => {
   it('selects the major key on the outer ring at the top (C)', () => {
-    const hit = hitTest(0, -130)
+    const hit = hitTest(0, -100) // outer ring (80..120)
     expect(hit.entry.root).toBe('C')
     expect(hit.isMinor).toBe(false)
   })
 
   it('selects the relative minor on the inner ring', () => {
-    const hit = hitTest(0, -70)
+    const hit = hitTest(0, -55) // inner ring (34..80)
     expect(hit.entry.minorRoot).toBe('A')
     expect(hit.isMinor).toBe(true)
   })
 
   it('returns null outside the ring', () => {
-    expect(hitTest(0, -300)).toBeNull()
+    expect(hitTest(0, -200)).toBeNull()
     expect(hitTest(0, 0)).toBeNull()
   })
 })

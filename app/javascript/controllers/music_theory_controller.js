@@ -3,7 +3,7 @@ import { INSTRUMENTS } from 'instruments/config'
 import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
-import { defaultAccidental } from 'theory/spelling'
+import { defaultAccidental, isMinorKey } from 'theory/spelling'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
 import * as fingering from 'renderers/fingering_renderer'
@@ -39,10 +39,9 @@ export default class extends Controller {
     this.canvasTarget.removeEventListener('click', this.clickHandler)
   }
 
-  // In circle-of-fifths mode, clicking a key jumps the app to that key's scale
+  // Clicking a key on the always-visible circle jumps the app to that key's scale
   // (outer ring = major, inner ring = relative minor).
   onCanvasClick(event) {
-    if (this.modeValue !== 'circle') return
     const canvas = this.canvasTarget
     const rect = canvas.getBoundingClientRect()
     const mx = (event.clientX - rect.left) * (canvas.width / rect.width)
@@ -105,13 +104,13 @@ export default class extends Controller {
   }
 
   captureName() {
-    if (this.modeValue === 'notes' || this.modeValue === 'circle') { this.nameValue = ''; return }
+    if (this.modeValue === 'notes') { this.nameValue = ''; return }
     this.nameValue = this.nameTarget.value
   }
 
   populateNameOptions() {
     const mode = this.modeValue
-    this.nameTarget.disabled = mode === 'notes' || mode === 'circle'
+    this.nameTarget.disabled = mode === 'notes'
     const table = mode === 'chord' ? CHORDS : mode === 'scale' ? SCALES : {}
     this.nameTarget.innerHTML = ''
     Object.keys(table).forEach((key) => {
@@ -143,13 +142,6 @@ export default class extends Controller {
     canvas.height = 560
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    if (this.modeValue === 'circle') {
-      ctx.save()
-      circle.draw(ctx, { highlightRoot: this.rootValue })
-      ctx.restore()
-      return
-    }
-
     const groups = this.octaveGroups()
     const flat = groups.flat()
     ctx.save()
@@ -164,13 +156,20 @@ export default class extends Controller {
     // Notes stay on a single staff — the second octave simply sits higher.
     staff.draw(ctx, [flat], { accidental: this.accidental, clef: config.clef || 'treble' })
     ctx.restore()
+
+    // Always-visible circle of fifths (bottom-right), lighting the current key.
+    ctx.save()
+    circle.draw(ctx, {
+      highlightRoot: this.rootValue,
+      highlightMinor: isMinorKey({ mode: this.modeValue, name: this.nameValue }),
+    })
+    ctx.restore()
   }
 
   pushUrl() {
     const enc = encodeURIComponent
     let path
-    if (this.modeValue === 'circle') path = '/circle'
-    else if (this.modeValue === 'notes') path = `/${this.instrumentValue}/notes/${enc(this.rootValue)}`
+    if (this.modeValue === 'notes') path = `/${this.instrumentValue}/notes/${enc(this.rootValue)}`
     else path = `/${this.instrumentValue}/${this.modeValue}/${enc(this.rootValue)}/${enc(this.nameValue)}`
     window.history.pushState({}, '', path)
   }
@@ -178,13 +177,6 @@ export default class extends Controller {
   syncFromLocation() {
     const parts = window.location.pathname.split('/').filter(Boolean).map(decodeURIComponent)
     if (parts.length === 0) return
-    if (parts[0] === 'circle') {
-      this.modeValue = 'circle'
-      this.modeTarget.value = 'circle'
-      this.populateNameOptions()
-      this.render()
-      return
-    }
     const [instrument, mode, root, name] = parts
     this.instrumentValue = instrument
     this.modeValue = mode === 'notes' ? 'notes' : mode

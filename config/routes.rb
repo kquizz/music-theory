@@ -4,7 +4,6 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
   root "views#show", defaults: { instrument: "guitar", mode: "scale", root: "C", name: "major" }
-  get "/circle", to: "views#show", defaults: { instrument: "guitar", mode: "circle", root: "C", name: "" }
   get "/:instrument/scale/:root/:name", to: "views#show", defaults: { mode: "scale" }
   get "/:instrument/chord/:root/:name", to: "views#show", defaults: { mode: "chord" }
   get "/:instrument/notes/:root", to: "views#show", defaults: { mode: "notes" }

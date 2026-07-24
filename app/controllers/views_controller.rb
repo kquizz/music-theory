@@ -26,7 +26,7 @@ class ViewsController < ApplicationController
     case @mode
     when "scale" then SCALES.include?(@name)
     when "chord" then CHORDS.include?(@name)
-    when "notes", "circle" then true
+    when "notes" then true
     else false
     end
   end

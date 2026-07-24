@@ -31,6 +31,11 @@ function isMinorFamily(mode, name) {
   return false
 }
 
+// Whether the current view represents a minor key (for circle-of-fifths highlighting).
+export function isMinorKey({ mode, name }) {
+  return isMinorFamily(mode, name)
+}
+
 // Default accidental spelling for a view. Minor-family roots borrow their
 // relative major (root + 3 semitones) key signature.
 export function defaultAccidental({ mode, root, name }) {
