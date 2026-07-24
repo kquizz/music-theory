@@ -5,6 +5,16 @@ const LETTER_STEP = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 }
 const LAYOUT = { x: 20, y: 44, lineGap: 18, width: 480, clefWidth: 46 }
 const CLEF_GLYPH = { treble: '𝄞', bass: '𝄢' }
 
+// Diatonic staff index (abs) of each accidental in a treble-clef key signature.
+// abs: middle C4 = 0, bottom line E4 = 2, top line F5 = 10.
+const SIG_ABS = {
+  sharp: { F: 10, C: 7, G: 11, D: 8, A: 5, E: 9, B: 6 },
+  flat: { B: 6, E: 9, A: 5, D: 8, G: 4, C: 7, F: 3 },
+}
+const SIG_GLYPH = { sharp: '♯', flat: '♭' }
+const SIG_STEP = 11 // horizontal spacing between key-signature accidentals
+const EMPTY_SIG = { type: 'sharp', letters: [] }
+
 // Pure: split a note name into staff letter/step + accidental glyph.
 export function staffPlacement(noteName) {
   const letter = noteName[0]
@@ -42,11 +52,13 @@ function ledgerPositions(abs) {
   return ledgers
 }
 
-// Draw one 5-line staff (with clef + notes) whose top line is at `yTop`.
-function drawStaff(ctx, notes, yTop, { accidental, clef }) {
+// Draw one 5-line staff (with clef + key signature + notes) whose top line is at
+// `yTop`. Key signatures are treble-clef only for now (SIG_ABS positions).
+function drawStaff(ctx, notes, yTop, { accidental, clef, keySig }) {
   const staffLeft = LAYOUT.x + LAYOUT.clefWidth
   const bottomLineY = yTop + 4 * LAYOUT.lineGap // E4, bottom staff line
   const absToY = (abs) => bottomLineY - (abs - 2) * (LAYOUT.lineGap / 2)
+  const sig = clef === 'treble' && keySig ? keySig : EMPTY_SIG
 
   ctx.strokeStyle = '#333'
   ctx.lineWidth = 1
@@ -65,13 +77,24 @@ function drawStaff(ctx, notes, yTop, { accidental, clef }) {
   ctx.fillText(CLEF_GLYPH[clef] || CLEF_GLYPH.treble,
     LAYOUT.x + LAYOUT.clefWidth / 2, yTop + 2 * LAYOUT.lineGap)
 
+  // Key signature accidentals, in conventional order after the clef.
+  ctx.font = '20px serif'
+  ctx.fillStyle = '#222'
+  sig.letters.forEach((letter, i) => {
+    const sx = staffLeft + 8 + i * SIG_STEP
+    ctx.fillText(SIG_GLYPH[sig.type], sx, absToY(SIG_ABS[sig.type][letter]))
+  })
+  const sigWidth = sig.letters.length ? sig.letters.length * SIG_STEP + 8 : 0
+
   const names = notes.map((n) => numberToNote(n.semitone, accidental))
   const placements = ascendingPlacements(names)
-  const spacing = (LAYOUT.width - 50) / Math.max(notes.length, 1)
+  const covered = new Set(sig.letters)
+  const sigChar = SIG_GLYPH[sig.type] === '♯' ? '#' : 'b'
+  const spacing = (LAYOUT.width - 50 - sigWidth) / Math.max(notes.length, 1)
 
   ctx.font = '18px serif'
   placements.forEach((p, i) => {
-    const x = staffLeft + 40 + i * spacing
+    const x = staffLeft + 40 + sigWidth + i * spacing
     const y = absToY(p.abs)
 
     ctx.strokeStyle = '#333'
@@ -88,7 +111,8 @@ function drawStaff(ctx, notes, yTop, { accidental, clef }) {
     ctx.ellipse(x, y, 9, 6.5, 0, 0, Math.PI * 2)
     ctx.fill()
 
-    if (p.accidental) {
+    const signed = covered.has(p.letter) && p.accidental === sigChar
+    if (p.accidental && !signed) {
       ctx.fillStyle = '#333'
       ctx.fillText(p.accidental, x - 17, y)
     }
@@ -99,12 +123,12 @@ function drawStaff(ctx, notes, yTop, { accidental, clef }) {
 
 // `systems` is an array of note arrays — one stacked staff per entry, so a
 // 2-octave scale puts each octave on its own line instead of climbing off the top.
-export function draw(ctx, systems, { accidental = 'sharp', clef = 'treble' } = {}) {
+export function draw(ctx, systems, { accidental = 'sharp', clef = 'treble', keySig = null } = {}) {
   const stride = 9 * LAYOUT.lineGap // vertical space per staff (incl. ledger room)
   let width = 0
   ctx.save()
   systems.forEach((notes, s) => {
-    const w = drawStaff(ctx, notes, LAYOUT.y + s * stride, { accidental, clef })
+    const w = drawStaff(ctx, notes, LAYOUT.y + s * stride, { accidental, clef, keySig })
     width = Math.max(width, w)
   })
   ctx.restore()

@@ -49,6 +49,39 @@ export function parentMajorRoot({ mode, root, name }) {
   return numberToNote(normalize(noteToNumber(root) + offset), 'sharp')
 }
 
+// Conventional order accidentals appear in a key signature.
+const SHARP_LETTERS = ['F', 'C', 'G', 'D', 'A', 'E', 'B']
+const FLAT_LETTERS = ['B', 'E', 'A', 'D', 'G', 'C', 'F']
+
+// Sharps/flats in each MAJOR key, indexed by pitch class. Enharmonic choices
+// match MAJOR_ACCIDENTAL (Db not C#, F# not Gb, B not Cb) so the drawn signature
+// agrees with how the notes are spelled.
+const MAJOR_KEY_SIG = [
+  { type: 'sharp', count: 0 }, // 0  C
+  { type: 'flat', count: 5 }, //  1  Db
+  { type: 'sharp', count: 2 }, // 2  D
+  { type: 'flat', count: 3 }, //  3  Eb
+  { type: 'sharp', count: 4 }, // 4  E
+  { type: 'flat', count: 1 }, //  5  F
+  { type: 'sharp', count: 6 }, // 6  F#
+  { type: 'sharp', count: 1 }, // 7  G
+  { type: 'flat', count: 4 }, //  8  Ab
+  { type: 'sharp', count: 3 }, // 9  A
+  { type: 'flat', count: 2 }, //  10 Bb
+  { type: 'sharp', count: 5 }, // 11 B
+]
+
+// The key signature to draw after the clef: the ordered accidental letters for
+// this view's key. Only diatonic scale modes carry a signature; chords, the Notes
+// mode, and non-diatonic scales return an empty signature (no accidentals shown).
+export function keySignature({ mode, root, name }) {
+  if (mode !== "scale" || PARENT_OFFSET[name] == null) return { type: "sharp", letters: [] }
+  const pc = noteToNumber(parentMajorRoot({ mode, root, name }))
+  const { type, count } = MAJOR_KEY_SIG[pc]
+  const order = type === "sharp" ? SHARP_LETTERS : FLAT_LETTERS
+  return { type, letters: order.slice(0, count) }
+}
+
 // Default accidental spelling for a view. Scales/modes borrow their parent major
 // key's signature (so C Mixolydian → F major → flats, i.e. B♭ not A♯). Chords use
 // the root's major key, or its relative major (root + 3) for minor-family chords.

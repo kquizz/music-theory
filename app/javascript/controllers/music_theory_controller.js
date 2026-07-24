@@ -3,7 +3,7 @@ import { INSTRUMENTS, defaultTuningKey, tuningStrings } from 'instruments/config
 import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
-import { defaultAccidental, isMinorKey, parentMajorRoot } from 'theory/spelling'
+import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
@@ -237,7 +237,11 @@ export default class extends Controller {
     // Notes on a single staff (left), second octave simply sits higher.
     ctx.save()
     ctx.translate(0, belowY)
-    staff.draw(ctx, [flat], { accidental: this.accidental, clef: config.clef || 'treble' })
+    staff.draw(ctx, [flat], {
+      accidental: this.accidental,
+      clef: config.clef || 'treble',
+      keySig: keySignature({ mode: this.modeValue, root: this.rootValue, name: this.nameValue }),
+    })
     ctx.restore()
 
     // Circle of fifths (right, beside the staff): parent-key wedge + tonic marker.
