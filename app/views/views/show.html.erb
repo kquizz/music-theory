@@ -27,5 +27,20 @@
     <button data-action="click->music-theory#toggleLabels" data-music-theory-target="labels">Names</button>
   </div>
 
+  <div class="diatonic" data-music-theory-target="diatonic"></div>
+
   <canvas data-music-theory-target="canvas"></canvas>
 </div>
+
+<style>
+  .diatonic { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
+  .diatonic:empty { display: none; }
+  .diatonic button {
+    display: flex; flex-direction: column; align-items: center; min-width: 52px;
+    padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
+    background: #fafafa; cursor: pointer; font: inherit; line-height: 1.2;
+  }
+  .diatonic button:hover { background: #eef4ff; border-color: #8ec3ff; }
+  .diatonic button .roman { font-weight: 600; font-size: 0.95em; }
+  .diatonic button .chord { color: #555; font-size: 0.85em; }
+</style>

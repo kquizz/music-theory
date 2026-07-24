@@ -3,6 +3,7 @@ import { INSTRUMENTS, defaultTuningKey, tuningStrings } from 'instruments/config
 import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
+import { diatonicChords } from 'theory/diatonic'
 import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
@@ -14,7 +15,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -166,6 +167,31 @@ export default class extends Controller {
     return { ...config, tuning: tuningStrings(config, this.tuningKey) }
   }
 
+  // A clickable row of the current key's diatonic triads (scale mode, 7-note
+  // scales only). Clicking one loads that chord on the same instrument.
+  populateDiatonic() {
+    if (!this.hasDiatonicTarget) return
+    this.diatonicTarget.innerHTML = ''
+    if (this.modeValue !== 'scale') return
+    diatonicChords(this.rootValue, this.nameValue, this.accidental).forEach((chord) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.innerHTML = `<span class="roman">${chord.roman}</span><span class="chord">${chord.label}</span>`
+      btn.addEventListener('click', () => this.selectDiatonic(chord))
+      this.diatonicTarget.appendChild(btn)
+    })
+  }
+
+  selectDiatonic(chord) {
+    this.modeValue = 'chord'
+    this.modeTarget.value = 'chord'
+    this.rootValue = chord.chordRoot
+    this.populateNameOptions()
+    this.nameValue = chord.quality
+    this.nameTarget.value = chord.quality
+    this.update()
+  }
+
   captureName() {
     if (this.modeValue === 'notes') { this.nameValue = ''; return }
     this.nameValue = this.nameTarget.value
@@ -206,6 +232,7 @@ export default class extends Controller {
   }
 
   render() {
+    this.populateDiatonic()
     const config = this.effectiveConfig()
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
