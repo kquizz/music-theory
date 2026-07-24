@@ -1,4 +1,4 @@
-import { noteToNumber } from 'theory/notes'
+import { noteToNumber, numberToNote, normalize } from 'theory/notes'
 
 // By pitch class, whether the MAJOR key on that root is conventionally written
 // with sharps or flats. C is neutral (no accidentals) → treated as sharp.
@@ -36,10 +36,27 @@ export function isMinorKey({ mode, name }) {
   return isMinorFamily(mode, name)
 }
 
-// Default accidental spelling for a view. Minor-family roots borrow their
-// relative major (root + 3 semitones) key signature.
+// Semitones from a mode's tonic up to its parent major key's tonic. A mode shares
+// the key signature of this major key (e.g. C Mixolydian -> F major, 1 flat).
+const PARENT_OFFSET = {
+  major: 0, lydian: 7, mixolydian: 5, dorian: 10, aeolian: 3, minor: 3, phrygian: 8, locrian: 1,
+}
+
+// The (sharp-spelled) root of the major key whose signature this scale uses. For
+// non-diatonic scales / chords with no clean parent, falls back to the tonic.
+export function parentMajorRoot({ mode, root, name }) {
+  const offset = mode === 'scale' && PARENT_OFFSET[name] != null ? PARENT_OFFSET[name] : 0
+  return numberToNote(normalize(noteToNumber(root) + offset), 'sharp')
+}
+
+// Default accidental spelling for a view. Scales/modes borrow their parent major
+// key's signature (so C Mixolydian → F major → flats, i.e. B♭ not A♯). Chords use
+// the root's major key, or its relative major (root + 3) for minor-family chords.
 export function defaultAccidental({ mode, root, name }) {
+  if (mode === 'scale') {
+    return MAJOR_ACCIDENTAL[noteToNumber(parentMajorRoot({ mode, root, name }))]
+  }
   const rootPc = noteToNumber(root)
-  const pc = isMinorFamily(mode, name) ? (rootPc + 3) % 12 : rootPc
+  const pc = isMinorFamily(mode, name) ? normalize(rootPc + 3) : rootPc
   return MAJOR_ACCIDENTAL[pc]
 }

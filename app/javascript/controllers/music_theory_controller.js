@@ -3,7 +3,7 @@ import { INSTRUMENTS } from 'instruments/config'
 import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
-import { defaultAccidental, isMinorKey } from 'theory/spelling'
+import { defaultAccidental, isMinorKey, parentMajorRoot } from 'theory/spelling'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
 import * as fingering from 'renderers/fingering_renderer'
@@ -46,8 +46,8 @@ export default class extends Controller {
     const rect = canvas.getBoundingClientRect()
     const mx = (event.clientX - rect.left) * (canvas.width / rect.width)
     const my = (event.clientY - rect.top) * (canvas.height / rect.height)
-    const geo = circle.geometry()
-    const hit = circle.hitTest(mx - geo.cx, my - geo.cy)
+    const center = this.circleCenter || { cx: 700, cy: 300 }
+    const hit = circle.hitTest(mx - center.cx, my - center.cy)
     if (!hit) return
     this.modeValue = 'scale'
     this.rootValue = hit.isMinor ? hit.entry.minorRoot : hit.entry.root
@@ -138,12 +138,14 @@ export default class extends Controller {
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
 
-    canvas.width = 900
-    canvas.height = 560
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
     const groups = this.octaveGroups()
     const flat = groups.flat()
+    const { outerR } = circle.radii()
+
+    // Measure the instrument view on a throwaway pass to size the canvas.
+    canvas.width = 900
+    canvas.height = 900
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
     // Brass wraps fingerings into one row per octave; other views take the flat line.
     const dims = config.type === 'brass'
@@ -151,17 +153,33 @@ export default class extends Controller {
       : (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, { accidental: this.accidental })
     ctx.restore()
 
+    const belowY = (dims && dims.height ? dims.height : 220) + 15
+    const circleCx = 705
+    const circleCy = belowY + outerR
+    this.circleCenter = { cx: circleCx, cy: circleCy }
+
+    // Compact the canvas to just fit the tallest lower element (the circle).
+    canvas.height = circleCy + outerR + 20
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
-    ctx.translate(0, (dims && dims.height ? dims.height : 220))
-    // Notes stay on a single staff — the second octave simply sits higher.
+    const dims2 = config.type === 'brass'
+      ? fingering.draw(ctx, config, groups, { accidental: this.accidental })
+      : (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, { accidental: this.accidental })
+    ctx.restore()
+    void dims2
+
+    // Notes on a single staff (left), second octave simply sits higher.
+    ctx.save()
+    ctx.translate(0, belowY)
     staff.draw(ctx, [flat], { accidental: this.accidental, clef: config.clef || 'treble' })
     ctx.restore()
 
-    // Always-visible circle of fifths (bottom-right), lighting the current key.
+    // Circle of fifths (right, beside the staff): parent-key wedge + tonic marker.
     ctx.save()
-    circle.draw(ctx, {
-      highlightRoot: this.rootValue,
-      highlightMinor: isMinorKey({ mode: this.modeValue, name: this.nameValue }),
+    circle.draw(ctx, circleCx, circleCy, {
+      highlightRoot: parentMajorRoot({ mode: this.modeValue, root: this.rootValue, name: this.nameValue }),
+      tonicRoot: this.rootValue,
+      tonicMinor: isMinorKey({ mode: this.modeValue, name: this.nameValue }),
     })
     ctx.restore()
   }

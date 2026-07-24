@@ -16,11 +16,10 @@ export const CIRCLE = [
   { major: 'F', root: 'F', minor: 'Dm', minorRoot: 'D', sig: '1♭' },
 ]
 
-// Bottom-right of the 900x560 canvas.
-const GEO = { cx: 700, cy: 400, outerR: 120, boundaryR: 80, holeR: 34 }
+const R = { outerR: 135, boundaryR: 90, holeR: 38 }
 
-export function geometry() {
-  return { ...GEO }
+export function radii() {
+  return { ...R }
 }
 
 // Pure: circle index (0 = C at top) for an angle measured clockwise from top.
@@ -33,9 +32,9 @@ export function indexFromAngle(angleRad) {
 // outside the ring. Returns { entry, isMinor }.
 export function hitTest(dx, dy) {
   const dist = Math.hypot(dx, dy)
-  if (dist < GEO.holeR || dist > GEO.outerR) return null
+  if (dist < R.holeR || dist > R.outerR) return null
   const angle = Math.atan2(dx, -dy) // 0 at top, increasing clockwise
-  return { entry: CIRCLE[indexFromAngle(angle)], isMinor: dist < GEO.boundaryR }
+  return { entry: CIRCLE[indexFromAngle(angle)], isMinor: dist < R.boundaryR }
 }
 
 function wedge(ctx, cx, cy, rOuter, rInner, a0, a1, fill) {
@@ -50,10 +49,12 @@ function wedge(ctx, cx, cy, rOuter, rInner, a0, a1, fill) {
   ctx.stroke()
 }
 
-// Draws the wheel, lighting the current key: the outer (major) wedge when
-// !highlightMinor, else the inner (minor) wedge, matched by root.
-export function draw(ctx, { highlightRoot, highlightMinor = false } = {}) {
-  const { cx, cy, outerR, boundaryR, holeR } = GEO
+// Draws the wheel centered at (cx, cy). Lights the parent-key wedge
+// (`highlightRoot`, a major key) blue to show the key signature, and puts an
+// orange tonic marker on the note you picked (outer major, or inner minor when
+// `tonicMinor`).
+export function draw(ctx, cx, cy, { highlightRoot, tonicRoot, tonicMinor = false } = {}) {
+  const { outerR, boundaryR, holeR } = R
   const seg = (Math.PI * 2) / 12
   const majorR = (outerR + boundaryR) / 2
   const minorR = (boundaryR + holeR) / 2
@@ -65,27 +66,32 @@ export function draw(ctx, { highlightRoot, highlightMinor = false } = {}) {
   CIRCLE.forEach((entry, i) => {
     const a0 = i * seg - seg / 2 - Math.PI / 2
     const a1 = a0 + seg
-    const outerHi = !highlightMinor && entry.root === highlightRoot
-    const innerHi = highlightMinor && entry.minorRoot === highlightRoot
-
-    wedge(ctx, cx, cy, outerR, boundaryR, a0, a1, outerHi ? '#8ec3ff' : '#fff')
-    wedge(ctx, cx, cy, boundaryR, holeR, a0, a1, innerHi ? '#ffcf8a' : '#f6f6f6')
-
     const px = (r) => cx + r * Math.sin(i * seg)
     const py = (r) => cy - r * Math.cos(i * seg)
 
-    ctx.fillStyle = '#111'
-    ctx.font = 'bold 14px sans-serif'
-    ctx.fillText(entry.major, px(majorR), py(majorR) - 5)
-    ctx.fillStyle = '#999'
-    ctx.font = '8px sans-serif'
-    ctx.fillText(entry.sig, px(majorR), py(majorR) + 8)
+    wedge(ctx, cx, cy, outerR, boundaryR, a0, a1, entry.root === highlightRoot ? '#8ec3ff' : '#fff')
+    wedge(ctx, cx, cy, boundaryR, holeR, a0, a1, '#f6f6f6')
 
-    ctx.fillStyle = '#666'
-    ctx.font = '10px sans-serif'
+    const markOuter = !tonicMinor && entry.root === tonicRoot
+    const markInner = tonicMinor && entry.minorRoot === tonicRoot
+    if (markOuter || markInner) {
+      ctx.fillStyle = '#f5a623'
+      ctx.beginPath()
+      ctx.arc(px(markOuter ? majorR : minorR), py(markOuter ? majorR : minorR), 16, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    ctx.fillStyle = '#111'
+    ctx.font = 'bold 16px sans-serif'
+    ctx.fillText(entry.major, px(majorR), py(majorR) - 5)
+    ctx.fillStyle = markOuter ? '#7a4a00' : '#999'
+    ctx.font = '9px sans-serif'
+    ctx.fillText(entry.sig, px(majorR), py(majorR) + 9)
+
+    ctx.fillStyle = '#555'
+    ctx.font = '12px sans-serif'
     ctx.fillText(entry.minor, px(minorR), py(minorR))
   })
 
   ctx.restore()
-  return { width: cx + outerR, height: cy + outerR }
 }

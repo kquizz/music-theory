@@ -2,7 +2,7 @@ import { numberToNote, noteToNumber } from 'theory/notes'
 import { colorForDegree } from 'renderers/palette'
 
 const LETTER_STEP = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 }
-const LAYOUT = { x: 30, y: 40, lineGap: 12, width: 360, clefWidth: 34 }
+const LAYOUT = { x: 20, y: 44, lineGap: 18, width: 480, clefWidth: 46 }
 const CLEF_GLYPH = { treble: '𝄞', bass: '𝄢' }
 
 // Pure: split a note name into staff letter/step + accidental glyph.
@@ -67,30 +67,30 @@ function drawStaff(ctx, notes, yTop, { accidental, clef }) {
 
   const names = notes.map((n) => numberToNote(n.semitone, accidental))
   const placements = ascendingPlacements(names)
-  const spacing = (LAYOUT.width - 40) / Math.max(notes.length, 1)
+  const spacing = (LAYOUT.width - 50) / Math.max(notes.length, 1)
 
-  ctx.font = '14px serif'
+  ctx.font = '18px serif'
   placements.forEach((p, i) => {
-    const x = staffLeft + 30 + i * spacing
+    const x = staffLeft + 40 + i * spacing
     const y = absToY(p.abs)
 
     ctx.strokeStyle = '#333'
     ledgerPositions(p.abs).forEach((l) => {
       const ly = absToY(l)
       ctx.beginPath()
-      ctx.moveTo(x - 10, ly)
-      ctx.lineTo(x + 10, ly)
+      ctx.moveTo(x - 14, ly)
+      ctx.lineTo(x + 14, ly)
       ctx.stroke()
     })
 
     ctx.fillStyle = colorForDegree(notes[i].degree)
     ctx.beginPath()
-    ctx.ellipse(x, y, 6, 4.5, 0, 0, Math.PI * 2)
+    ctx.ellipse(x, y, 9, 6.5, 0, 0, Math.PI * 2)
     ctx.fill()
 
     if (p.accidental) {
       ctx.fillStyle = '#333'
-      ctx.fillText(p.accidental, x - 12, y)
+      ctx.fillText(p.accidental, x - 17, y)
     }
   })
 
