@@ -4,6 +4,7 @@ import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { defaultAccidental, isMinorKey, parentMajorRoot } from 'theory/spelling'
+import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
 import * as fingering from 'renderers/fingering_renderer'
@@ -18,13 +19,12 @@ export default class extends Controller {
 
   connect() {
     this.octaves = 1
-    this.accidentalOverridden = false
     this.accidental = this.keyAccidental()
     this.updateOctavesLabel()
     this.populateInstrumentOptions()
     this.instrumentTarget.value = this.instrumentValue
     this.modeTarget.value = this.modeValue
-    this.rootTarget.value = this.rootValue
+    this.syncRootSpelling()
     this.populateNameOptions()
     if (this.modeValue !== 'notes') this.nameTarget.value = this.nameValue
     this.popstateHandler = () => this.syncFromLocation()
@@ -63,10 +63,27 @@ export default class extends Controller {
   onMode() { this.modeValue = this.modeTarget.value; this.populateNameOptions(); this.captureName(); this.update() }
   onRoot() { this.rootValue = this.rootTarget.value; this.update() }
   onName() { this.captureName(); this.update() }
+  // Manual override for the current view only; any key change re-applies the
+  // automatic circle-of-fifths spelling (see keyAccidental / update).
   toggleAccidental() {
-    this.accidentalOverridden = true
     this.accidental = this.accidental === 'sharp' ? 'flat' : 'sharp'
+    this.syncRootSpelling()
     this.render()
+  }
+
+  // Populate the root dropdown with the 12 notes spelled per the current
+  // accidental, and re-spell the current root to match (C# <-> Db, etc.).
+  syncRootSpelling() {
+    this.rootValue = numberToNote(noteToNumber(this.rootValue), this.accidental)
+    this.rootTarget.innerHTML = ''
+    for (let i = 0; i < 12; i += 1) {
+      const name = numberToNote(i, this.accidental)
+      const opt = document.createElement('option')
+      opt.value = name
+      opt.textContent = name
+      this.rootTarget.appendChild(opt)
+    }
+    this.rootTarget.value = this.rootValue
   }
 
   toggleOctaves() {
@@ -128,7 +145,8 @@ export default class extends Controller {
   }
 
   update() {
-    if (!this.accidentalOverridden) this.accidental = this.keyAccidental()
+    this.accidental = this.keyAccidental() // auto sharp/flat from the key
+    this.syncRootSpelling()
     this.render()
     this.pushUrl()
   }
@@ -202,11 +220,10 @@ export default class extends Controller {
     this.nameValue = name || ''
     this.instrumentTarget.value = this.instrumentValue
     this.modeTarget.value = this.modeValue
-    this.rootTarget.value = this.rootValue
     this.populateNameOptions()
     if (this.modeValue !== 'notes' && name) this.nameTarget.value = name
-    this.accidentalOverridden = false
     this.accidental = this.keyAccidental()
+    this.syncRootSpelling()
     this.render()
   }
 }
