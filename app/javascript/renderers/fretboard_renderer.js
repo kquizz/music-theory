@@ -1,5 +1,13 @@
 import { noteToNumber, normalize, numberToNote } from 'theory/notes'
+import { intervalLabel } from 'theory/intervals'
 import { colorForDegree } from 'renderers/palette'
+
+// Label for a note dot: either its name (C, E, G) or its interval from the root
+// (R, 3, 5) depending on labelMode.
+export function noteLabel(semitone, { labelMode, accidental, rootSemitone }) {
+  if (labelMode === 'degrees' && rootSemitone != null) return intervalLabel(rootSemitone, semitone)
+  return numberToNote(semitone, accidental)
+}
 
 const LAYOUT = {
   xOffset: 40, yOffset: 30, fretLength: 46, stringHeight: 26,
@@ -22,8 +30,10 @@ export function fretboardPositions(config, notes) {
   return hits
 }
 
-export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
+export function draw(ctx, config, notes, { accidental = 'sharp', labelMode = 'names' } = {}) {
   const strings = config.tuning.length
+  const rootNote = notes.find((n) => n.degree === 0)
+  const rootSemitone = rootNote ? rootNote.semitone : null
   const width = LAYOUT.xOffset + config.frets * LAYOUT.fretLength + 20
   const height = LAYOUT.yOffset + strings * LAYOUT.stringHeight + 20
 
@@ -74,7 +84,7 @@ export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
     ctx.arc(x, y, degree === 0 ? 12 : 9, 0, Math.PI * 2)
     ctx.fill()
     ctx.fillStyle = '#fff'
-    ctx.fillText(numberToNote(semitone, accidental), x, y)
+    ctx.fillText(noteLabel(semitone, { labelMode, accidental, rootSemitone }), x, y)
   })
   ctx.restore()
   return { width, height }

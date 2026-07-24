@@ -14,13 +14,15 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
     this.octaves = 1
+    this.labelMode = 'names'
     this.accidental = this.keyAccidental()
     this.updateOctavesLabel()
+    this.updateLabelsLabel()
     this.populateInstrumentOptions()
     this.instrumentTarget.value = this.instrumentValue
     this.modeTarget.value = this.modeValue
@@ -96,6 +98,16 @@ export default class extends Controller {
     if (this.hasOctavesTarget) this.octavesTarget.textContent = `${this.octaves} Octave${this.octaves > 1 ? 's' : ''}`
   }
 
+  toggleLabels() {
+    this.labelMode = this.labelMode === 'names' ? 'degrees' : 'names'
+    this.updateLabelsLabel()
+    this.render()
+  }
+
+  updateLabelsLabel() {
+    if (this.hasLabelsTarget) this.labelsTarget.textContent = this.labelMode === 'names' ? 'Names' : 'Degrees'
+  }
+
   keyAccidental() {
     return defaultAccidental({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
   }
@@ -151,6 +163,14 @@ export default class extends Controller {
     this.pushUrl()
   }
 
+  // Brass wraps fingerings into one row per octave; other views take the flat line.
+  drawInstrumentView(ctx, config, groups, flat) {
+    const opts = { accidental: this.accidental, labelMode: this.labelMode }
+    return config.type === 'brass'
+      ? fingering.draw(ctx, config, groups, opts)
+      : (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, opts)
+  }
+
   render() {
     const config = INSTRUMENTS[this.instrumentValue]
     const canvas = this.canvasTarget
@@ -165,10 +185,7 @@ export default class extends Controller {
     canvas.height = 900
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
-    // Brass wraps fingerings into one row per octave; other views take the flat line.
-    const dims = config.type === 'brass'
-      ? fingering.draw(ctx, config, groups, { accidental: this.accidental })
-      : (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, { accidental: this.accidental })
+    const dims = this.drawInstrumentView(ctx, config, groups, flat)
     ctx.restore()
 
     const belowY = (dims && dims.height ? dims.height : 220) + 15
@@ -180,11 +197,8 @@ export default class extends Controller {
     canvas.height = circleCy + outerR + 20
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
-    const dims2 = config.type === 'brass'
-      ? fingering.draw(ctx, config, groups, { accidental: this.accidental })
-      : (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, { accidental: this.accidental })
+    this.drawInstrumentView(ctx, config, groups, flat)
     ctx.restore()
-    void dims2
 
     // Notes on a single staff (left), second octave simply sits higher.
     ctx.save()

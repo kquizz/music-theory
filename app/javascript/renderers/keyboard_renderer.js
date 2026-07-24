@@ -1,4 +1,5 @@
-import { noteToNumber, normalize, numberToNote } from 'theory/notes'
+import { noteToNumber, normalize } from 'theory/notes'
+import { noteLabel } from 'renderers/fretboard_renderer'
 import { colorForDegree } from 'renderers/palette'
 
 const BLACK = new Set([1, 3, 6, 8, 10]) // semitone offsets within an octave (C-based)
@@ -19,8 +20,11 @@ export function keyboardKeys({ octaves, startNote }) {
   return keys
 }
 
-export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
+export function draw(ctx, config, notes, { accidental = 'sharp', labelMode = 'names' } = {}) {
   const bySemitone = new Map(notes.map((n) => [n.semitone, n.degree]))
+  const rootNote = notes.find((n) => n.degree === 0)
+  const rootSemitone = rootNote ? rootNote.semitone : null
+  const labelOpts = { labelMode, accidental, rootSemitone }
   const keys = keyboardKeys(config)
   const whiteCount = keys.filter((k) => !k.isBlack).length
   const width = LAYOUT.x * 2 + whiteCount * LAYOUT.whiteWidth
@@ -40,7 +44,7 @@ export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
     ctx.strokeRect(x, LAYOUT.y, LAYOUT.whiteWidth, LAYOUT.whiteHeight)
     if (highlighted) {
       ctx.fillStyle = '#000'
-      ctx.fillText(numberToNote(key.semitone, accidental), x + LAYOUT.whiteWidth / 2, LAYOUT.y + LAYOUT.whiteHeight - 12)
+      ctx.fillText(noteLabel(key.semitone, labelOpts), x + LAYOUT.whiteWidth / 2, LAYOUT.y + LAYOUT.whiteHeight - 12)
     }
   })
   // black keys sit between whites, offset left of the following white
@@ -53,6 +57,10 @@ export function draw(ctx, config, notes, { accidental = 'sharp' } = {}) {
     ctx.fillRect(x, LAYOUT.y, LAYOUT.blackWidth, LAYOUT.blackHeight)
     ctx.strokeStyle = '#000'
     ctx.strokeRect(x, LAYOUT.y, LAYOUT.blackWidth, LAYOUT.blackHeight)
+    if (highlighted) {
+      ctx.fillStyle = '#fff'
+      ctx.fillText(noteLabel(key.semitone, labelOpts), x + LAYOUT.blackWidth / 2, LAYOUT.y + LAYOUT.blackHeight - 12)
+    }
   })
   ctx.restore()
   return { width, height }
