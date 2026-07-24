@@ -3,6 +3,7 @@ import { INSTRUMENTS } from 'instruments/config'
 import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
+import { defaultAccidental } from 'theory/spelling'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
 import * as staff from 'renderers/staff_renderer'
@@ -12,7 +13,8 @@ export default class extends Controller {
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
-    this.accidental = 'sharp'
+    this.accidentalOverridden = false
+    this.accidental = this.keyAccidental()
     this.instrumentTarget.value = this.instrumentValue
     this.modeTarget.value = this.modeValue
     this.rootTarget.value = this.rootValue
@@ -31,7 +33,15 @@ export default class extends Controller {
   onMode() { this.modeValue = this.modeTarget.value; this.populateNameOptions(); this.captureName(); this.update() }
   onRoot() { this.rootValue = this.rootTarget.value; this.update() }
   onName() { this.captureName(); this.update() }
-  toggleAccidental() { this.accidental = this.accidental === 'sharp' ? 'flat' : 'sharp'; this.render() }
+  toggleAccidental() {
+    this.accidentalOverridden = true
+    this.accidental = this.accidental === 'sharp' ? 'flat' : 'sharp'
+    this.render()
+  }
+
+  keyAccidental() {
+    return defaultAccidental({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
+  }
 
   captureName() {
     if (this.modeValue === 'notes') { this.nameValue = ''; return }
@@ -56,6 +66,7 @@ export default class extends Controller {
   }
 
   update() {
+    if (!this.accidentalOverridden) this.accidental = this.keyAccidental()
     this.render()
     this.pushUrl()
   }
@@ -103,6 +114,8 @@ export default class extends Controller {
     this.rootTarget.value = this.rootValue
     this.populateNameOptions()
     if (this.modeValue !== 'notes' && name) this.nameTarget.value = name
+    this.accidentalOverridden = false
+    this.accidental = this.keyAccidental()
     this.render()
   }
 }
