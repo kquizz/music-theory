@@ -22,9 +22,7 @@ describe('threeValveFingering', () => {
     expect(threeValveFingering(14)).toEqual([1, 3]) // D
   })
 
-  it('a concert C on a Bb trumpet (written D, +2) fingers 1-3', () => {
-    const concertC = 0
-    const written = (concertC + 2) % 12
-    expect(threeValveFingering(written)).toEqual([1, 3])
+  it('fingers a written D as valves 1-3', () => {
+    expect(threeValveFingering(2)).toEqual([1, 3])
   })
 })

@@ -4,7 +4,6 @@ import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { defaultAccidental } from 'theory/spelling'
-import { normalize } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
 import * as fingering from 'renderers/fingering_renderer'
@@ -89,12 +88,7 @@ export default class extends Controller {
 
   render() {
     const config = INSTRUMENTS[this.instrumentValue]
-    const concertNotes = noteSet({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
-    // Transposing instruments read WRITTEN pitches; concert instruments read as-is.
-    const transpose = config.transpose || 0
-    const notes = transpose
-      ? concertNotes.map((n) => ({ ...n, semitone: normalize(n.semitone + transpose) }))
-      : concertNotes
+    const notes = noteSet({ mode: this.modeValue, root: this.rootValue, name: this.nameValue })
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')
 

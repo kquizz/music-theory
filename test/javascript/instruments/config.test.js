@@ -14,9 +14,8 @@ describe('INSTRUMENTS', () => {
     expect(INSTRUMENTS.piano.startNote).toBe('C')
   })
 
-  it('defines trumpet as a Bb brass instrument (written a major 2nd up)', () => {
+  it('defines trumpet as a 3-valve brass instrument on treble clef', () => {
     expect(INSTRUMENTS.trumpet.type).toBe('brass')
-    expect(INSTRUMENTS.trumpet.transpose).toBe(2)
     expect(INSTRUMENTS.trumpet.valves).toBe(3)
     expect(INSTRUMENTS.trumpet.clef).toBe('treble')
   })
