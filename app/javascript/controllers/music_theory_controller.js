@@ -5,7 +5,7 @@ import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { diatonicChords } from 'theory/diatonic'
 import { PROGRESSIONS, progressionChords } from 'theory/progressions'
-import { play, playNote, playChordSequence } from 'audio/player'
+import { play, playNote, playChordSequence, beatSeconds, playbackDuration, metronomeClick } from 'audio/player'
 import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
@@ -17,12 +17,17 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
     this.octaves = 1
     this.labelMode = 'names'
+    this.bpm = 120
+    this.loop = false
+    this.playTimer = null
+    this.metroTimer = null
+    this.metroBeat = 0
     this.accidental = this.keyAccidental()
     this.updateOctavesLabel()
     this.updateLabelsLabel()
@@ -44,6 +49,8 @@ export default class extends Controller {
   disconnect() {
     window.removeEventListener('popstate', this.popstateHandler)
     this.canvasTarget.removeEventListener('click', this.clickHandler)
+    this.stopLoop()
+    this.stopMetronome()
   }
 
   // Clicking a key on the always-visible circle jumps the app to that key's scale
@@ -88,8 +95,55 @@ export default class extends Controller {
   }
 
   // Sound the current note set: chords play together, scales/notes run up and down.
+  // While looping, the Play button becomes Stop.
   onPlay() {
-    play(this.ensureAudio(), this.octaveGroups().flat(), { mode: this.modeValue })
+    if (this.playTimer) { this.stopLoop(); return }
+    this.playOnce()
+    if (this.loop) {
+      const dur = playbackDuration(this.octaveGroups().flat(), { mode: this.modeValue, bpm: this.bpm })
+      this.playTimer = setInterval(() => this.playOnce(), (dur + 0.4) * 1000)
+      if (this.hasPlayTarget) this.playTarget.textContent = '■ Stop'
+    }
+  }
+
+  playOnce() {
+    play(this.ensureAudio(), this.octaveGroups().flat(), { mode: this.modeValue, bpm: this.bpm })
+  }
+
+  stopLoop() {
+    if (this.playTimer) { clearInterval(this.playTimer); this.playTimer = null }
+    if (this.hasPlayTarget) this.playTarget.textContent = '▶ Play'
+  }
+
+  onTempo() {
+    this.bpm = Number(this.tempoTarget.value)
+    if (this.hasTempoLabelTarget) this.tempoLabelTarget.textContent = `${this.bpm} BPM`
+    if (this.metroTimer) { this.stopMetronome(); this.startMetronome() } // re-time to new tempo
+  }
+
+  toggleLoop() {
+    this.loop = !this.loop
+    if (this.hasLoopTarget) this.loopTarget.textContent = `Loop: ${this.loop ? 'On' : 'Off'}`
+    if (!this.loop) this.stopLoop()
+  }
+
+  toggleMetronome() {
+    if (this.metroTimer) { this.stopMetronome(); return }
+    this.startMetronome()
+  }
+
+  startMetronome() {
+    const ctx = this.ensureAudio()
+    this.metroBeat = 0
+    const tick = () => { metronomeClick(ctx, { accent: this.metroBeat % 4 === 0 }); this.metroBeat += 1 }
+    tick()
+    this.metroTimer = setInterval(tick, beatSeconds(this.bpm) * 1000)
+    if (this.hasMetroTarget) this.metroTarget.textContent = '■ Metronome'
+  }
+
+  stopMetronome() {
+    if (this.metroTimer) { clearInterval(this.metroTimer); this.metroTimer = null }
+    if (this.hasMetroTarget) this.metroTarget.textContent = 'Metronome'
   }
   onMode() { this.modeValue = this.modeTarget.value; this.populateNameOptions(); this.captureName(); this.update() }
   onRoot() { this.rootValue = this.rootTarget.value; this.update() }
@@ -214,7 +268,7 @@ export default class extends Controller {
       btn.type = 'button'
       const romans = chords.map((c) => c.roman).join(' – ')
       btn.innerHTML = `<span class="roman">${romans}</span><span class="chord">▶ ${prog.name}</span>`
-      btn.addEventListener('click', () => playChordSequence(this.ensureAudio(), chords.map((c) => c.notes)))
+      btn.addEventListener('click', () => playChordSequence(this.ensureAudio(), chords.map((c) => c.notes), { bpm: this.bpm }))
       this.progressionsTarget.appendChild(btn)
     })
   }

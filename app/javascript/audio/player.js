@@ -30,6 +30,18 @@ export function upAndDown(midis) {
   return [...up, ...up.slice(0, -1).reverse()]
 }
 
+// Seconds per beat at a given tempo (BPM).
+export function beatSeconds(bpm) {
+  return 60 / bpm
+}
+
+// Total seconds a `play()` call will take, so a loop knows when to re-trigger.
+export function playbackDuration(notes, { mode = 'scale', bpm = 120 } = {}) {
+  const beat = beatSeconds(bpm)
+  if (mode === 'chord') return beat * 2
+  return upAndDown(ascendingMidi(notes)).length * beat
+}
+
 // One enveloped tone; short attack/release avoids clicks.
 function tone(ctx, freq, start, duration) {
   const osc = ctx.createOscillator()
@@ -46,16 +58,16 @@ function tone(ctx, freq, start, duration) {
   osc.stop(start + duration)
 }
 
-// Play a note set through `ctx`. Chords sound together; scales/notes arpeggiate
-// up to the octave and back down. Returns the (possibly resumed) AudioContext.
-export function play(ctx, notes, { mode = 'scale' } = {}) {
+// Play a note set through `ctx` at `bpm`. Chords sound together; scales/notes
+// arpeggiate up to the octave and back. Returns the (possibly resumed) context.
+export function play(ctx, notes, { mode = 'scale', bpm = 120 } = {}) {
   if (ctx.state === 'suspended') ctx.resume()
+  const beat = beatSeconds(bpm)
   const now = ctx.currentTime + 0.05
   if (mode === 'chord') {
-    ascendingMidi(notes).forEach((m) => tone(ctx, midiToFreq(m), now, 1.2))
+    ascendingMidi(notes).forEach((m) => tone(ctx, midiToFreq(m), now, beat * 2 * 0.95))
   } else {
-    const step = 0.28
-    upAndDown(ascendingMidi(notes)).forEach((m, i) => tone(ctx, midiToFreq(m), now + i * step, 0.34))
+    upAndDown(ascendingMidi(notes)).forEach((m, i) => tone(ctx, midiToFreq(m), now + i * beat, beat * 0.9))
   }
   return ctx
 }
@@ -67,13 +79,30 @@ export function playNote(ctx, midi) {
   return ctx
 }
 
-// Play a sequence of chords (each a note set) as blocks, one per beat.
-export function playChordSequence(ctx, noteSets, { chordDur = 1.0 } = {}) {
+// Play a sequence of chords (each a note set) as blocks, `beatsPerChord` beats each.
+export function playChordSequence(ctx, noteSets, { bpm = 120, beatsPerChord = 2 } = {}) {
   if (ctx.state === 'suspended') ctx.resume()
+  const chordDur = beatSeconds(bpm) * beatsPerChord
   let t = ctx.currentTime + 0.05
   noteSets.forEach((notes) => {
     ascendingMidi(notes).forEach((m) => tone(ctx, midiToFreq(m), t, chordDur * 0.92))
     t += chordDur
   })
+  return ctx
+}
+
+// A short metronome click; accented beats are higher and louder.
+export function metronomeClick(ctx, { accent = false, time } = {}) {
+  if (ctx.state === 'suspended') ctx.resume()
+  const t = time != null ? time : ctx.currentTime
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.frequency.value = accent ? 1600 : 1000
+  gain.gain.setValueAtTime(0.0001, t)
+  gain.gain.exponentialRampToValueAtTime(accent ? 0.5 : 0.32, t + 0.001)
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05)
+  osc.connect(gain).connect(ctx.destination)
+  osc.start(t)
+  osc.stop(t + 0.06)
   return ctx
 }

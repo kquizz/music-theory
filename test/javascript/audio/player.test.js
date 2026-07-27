@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { midiToFreq, ascendingMidi, upAndDown } from 'audio/player'
+import { midiToFreq, ascendingMidi, upAndDown, beatSeconds, playbackDuration } from 'audio/player'
 
 describe('midiToFreq', () => {
   it('maps A4 to 440 Hz and octaves to 2x', () => {
@@ -46,5 +46,32 @@ describe('upAndDown', () => {
 
   it('returns empty for empty input', () => {
     expect(upAndDown([])).toEqual([])
+  })
+})
+
+describe('beatSeconds', () => {
+  it('converts BPM to seconds per beat', () => {
+    expect(beatSeconds(120)).toBeCloseTo(0.5, 5)
+    expect(beatSeconds(60)).toBeCloseTo(1, 5)
+    expect(beatSeconds(240)).toBeCloseTo(0.25, 5)
+  })
+})
+
+describe('playbackDuration', () => {
+  const set = (semis) => semis.map((semitone, degree) => ({ semitone, degree }))
+
+  it('a chord lasts two beats', () => {
+    expect(playbackDuration(set([0, 4, 7]), { mode: 'chord', bpm: 120 })).toBeCloseTo(1.0, 5)
+  })
+
+  it('a scale lasts one beat per note of its up-and-down run', () => {
+    // 7-note scale -> up-and-down is 15 notes; at 120 BPM (0.5s/beat) = 7.5s
+    expect(playbackDuration(set([0, 2, 4, 5, 7, 9, 11]), { mode: 'scale', bpm: 120 })).toBeCloseTo(7.5, 5)
+  })
+
+  it('scales with tempo', () => {
+    const slow = playbackDuration(set([0, 2, 4, 5, 7, 9, 11]), { mode: 'scale', bpm: 60 })
+    const fast = playbackDuration(set([0, 2, 4, 5, 7, 9, 11]), { mode: 'scale', bpm: 120 })
+    expect(slow).toBeCloseTo(fast * 2, 5)
   })
 })

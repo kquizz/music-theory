@@ -27,6 +27,16 @@
     <button data-action="click->music-theory#toggleLabels" data-music-theory-target="labels">Names</button>
 
     <button data-action="click->music-theory#onPlay" data-music-theory-target="play">▶ Play</button>
+
+    <button data-action="click->music-theory#toggleLoop" data-music-theory-target="loop">Loop: Off</button>
+
+    <button data-action="click->music-theory#toggleMetronome" data-music-theory-target="metro">Metronome</button>
+
+    <label class="tempo">
+      <input type="range" min="50" max="220" value="120" step="2"
+             data-music-theory-target="tempo" data-action="input->music-theory#onTempo">
+      <span data-music-theory-target="tempoLabel">120 BPM</span>
+    </label>
   </div>
 
   <div class="diatonic" data-music-theory-target="diatonic"></div>
@@ -44,6 +54,8 @@
   canvas { max-width: 100%; height: auto; }
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
   .controls select, .controls button { font: inherit; padding: 4px 8px; }
+  .controls .tempo { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #555; }
+  .controls .tempo input[type=range] { width: 110px; }
   @media (max-width: 640px) {
     main { margin-top: 1.25rem !important; padding-left: 12px !important; padding-right: 12px !important; }
   }
