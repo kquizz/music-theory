@@ -1,6 +1,6 @@
 class ViewsController < ApplicationController
   INSTRUMENTS = %w[guitar guitar7 bass ukulele mandolin banjo piano trumpet euphonium
-                   trombone tuba].freeze
+                   trombone tuba saxophone].freeze
   ROOTS = %w[C C# D D# E F F# G G# A A# B Db Eb Gb Ab Bb].freeze
   # Keep in sync with app/javascript/theory/scales.js and chords.js.
   SCALES = %w[major dorian phrygian lydian mixolydian aeolian minor locrian

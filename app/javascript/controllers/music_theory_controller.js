@@ -12,6 +12,7 @@ import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
 import * as fingering from 'renderers/fingering_renderer'
+import * as woodwind from 'renderers/woodwind_renderer'
 import * as staff from 'renderers/staff_renderer'
 import * as circle from 'renderers/circle_of_fifths_renderer'
 
@@ -444,9 +445,9 @@ export default class extends Controller {
   // Brass wraps fingerings into one row per octave; other views take the flat line.
   drawInstrumentView(ctx, config, groups, flat) {
     const opts = { accidental: this.accidental, labelMode: this.labelMode }
-    return config.type === 'brass'
-      ? fingering.draw(ctx, config, groups, opts)
-      : (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, opts)
+    if (config.type === 'brass') return fingering.draw(ctx, config, groups, opts)
+    if (config.type === 'woodwind') return woodwind.draw(ctx, config, groups, opts)
+    return (RENDERERS[config.type] || fretboard.draw)(ctx, config, flat, opts)
   }
 
   render() {

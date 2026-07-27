@@ -24,7 +24,7 @@ describe('INSTRUMENTS', () => {
   it('every instrument has a display name and a known renderer type', () => {
     for (const key of Object.keys(INSTRUMENTS)) {
       expect(typeof INSTRUMENTS[key].name).toBe('string')
-      expect(['fretboard', 'keyboard', 'brass']).toContain(INSTRUMENTS[key].type)
+      expect(['fretboard', 'keyboard', 'brass', 'woodwind']).toContain(INSTRUMENTS[key].type)
     }
   })
 

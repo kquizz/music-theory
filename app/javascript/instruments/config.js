@@ -57,6 +57,9 @@ export const INSTRUMENTS = {
   tuba: {
     name: 'Tuba (BB♭)', type: 'brass', valves: 3, clef: 'bass', fingering: 'bbb-tuba', baseMidi: 48,
   },
+  saxophone: {
+    name: 'Saxophone', type: 'woodwind', clef: 'treble', baseMidi: 60,
+  },
 }
 
 // First tuning key for an instrument (its default).
