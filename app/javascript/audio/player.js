@@ -20,6 +20,16 @@ export function ascendingMidi(notes, baseMidi = 60) {
   })
 }
 
+// Turn an ascending run into "up then back down": add the octave tonic as the
+// peak when the top note isn't already the tonic, then mirror the descent without
+// repeating the peak. A single note stays a single note.
+export function upAndDown(midis) {
+  if (!midis.length) return []
+  const up = midis.slice()
+  if (up[up.length - 1] % 12 !== up[0] % 12) up.push(up[0] + 12)
+  return [...up, ...up.slice(0, -1).reverse()]
+}
+
 // One enveloped tone; short attack/release avoids clicks.
 function tone(ctx, freq, start, duration) {
   const osc = ctx.createOscillator()
@@ -37,16 +47,22 @@ function tone(ctx, freq, start, duration) {
 }
 
 // Play a note set through `ctx`. Chords sound together; scales/notes arpeggiate
-// ascending. Returns the (possibly resumed) AudioContext.
+// up to the octave and back down. Returns the (possibly resumed) AudioContext.
 export function play(ctx, notes, { mode = 'scale' } = {}) {
   if (ctx.state === 'suspended') ctx.resume()
-  const midis = ascendingMidi(notes)
   const now = ctx.currentTime + 0.05
   if (mode === 'chord') {
-    midis.forEach((m) => tone(ctx, midiToFreq(m), now, 1.2))
+    ascendingMidi(notes).forEach((m) => tone(ctx, midiToFreq(m), now, 1.2))
   } else {
     const step = 0.28
-    midis.forEach((m, i) => tone(ctx, midiToFreq(m), now + i * step, 0.34))
+    upAndDown(ascendingMidi(notes)).forEach((m, i) => tone(ctx, midiToFreq(m), now + i * step, 0.34))
   }
+  return ctx
+}
+
+// Sound a single pitch (for click-to-play on a note/key/fingering).
+export function playNote(ctx, midi) {
+  if (ctx.state === 'suspended') ctx.resume()
+  tone(ctx, midiToFreq(midi), ctx.currentTime + 0.02, 0.6)
   return ctx
 }

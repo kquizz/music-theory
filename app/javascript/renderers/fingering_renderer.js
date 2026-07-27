@@ -130,15 +130,17 @@ export function draw(ctx, config, groups, { accidental = 'sharp' } = {}) {
   ctx.textBaseline = 'middle'
 
   let idx = 0
+  const hits = []
   groups.forEach((group, row) => {
     const topY = LAYOUT.y + row * LAYOUT.rowStride
     group.forEach((note, j) => {
       const cardLeft = LAYOUT.x + j * (LAYOUT.cardWidth + LAYOUT.cardGap)
       drawCard(ctx, config, note, midis[idx], cardLeft, topY, accidental, j > 0)
+      hits.push({ x: cardLeft, y: topY - 12, w: LAYOUT.cardWidth, h: 80, midi: midis[idx] })
       idx += 1
     })
   })
 
   ctx.restore()
-  return { width, height }
+  return { width, height, hits }
 }

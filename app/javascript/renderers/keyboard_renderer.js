@@ -26,9 +26,13 @@ export function draw(ctx, config, notes, { accidental = 'sharp', labelMode = 'na
   const rootSemitone = rootNote ? rootNote.semitone : null
   const labelOpts = { labelMode, accidental, rootSemitone }
   const keys = keyboardKeys(config)
+  const startMidi = 60 + noteToNumber(config.startNote) // first key in octave 4
+  keys.forEach((k, i) => { k.midi = startMidi + i })
   const whiteCount = keys.filter((k) => !k.isBlack).length
   const width = LAYOUT.x * 2 + whiteCount * LAYOUT.whiteWidth
   const height = LAYOUT.y * 2 + LAYOUT.whiteHeight
+  const whiteHits = []
+  const blackHits = []
 
   ctx.save()
   ctx.textAlign = 'center'
@@ -46,6 +50,7 @@ export function draw(ctx, config, notes, { accidental = 'sharp', labelMode = 'na
       ctx.fillStyle = '#000'
       ctx.fillText(noteLabel(key.semitone, labelOpts), x + LAYOUT.whiteWidth / 2, LAYOUT.y + LAYOUT.whiteHeight - 12)
     }
+    whiteHits.push({ x, y: LAYOUT.y, w: LAYOUT.whiteWidth, h: LAYOUT.whiteHeight, midi: key.midi })
   })
   // black keys sit between whites, offset left of the following white
   let priorWhiteX = null
@@ -61,7 +66,9 @@ export function draw(ctx, config, notes, { accidental = 'sharp', labelMode = 'na
       ctx.fillStyle = '#fff'
       ctx.fillText(noteLabel(key.semitone, labelOpts), x + LAYOUT.blackWidth / 2, LAYOUT.y + LAYOUT.blackHeight - 12)
     }
+    blackHits.push({ x, y: LAYOUT.y, w: LAYOUT.blackWidth, h: LAYOUT.blackHeight, midi: key.midi })
   })
   ctx.restore()
-  return { width, height }
+  // Black keys first: they sit on top, so a click in the overlap plays the black key.
+  return { width, height, hits: [...blackHits, ...whiteHits] }
 }

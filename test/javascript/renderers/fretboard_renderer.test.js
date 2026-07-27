@@ -1,7 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { fretboardPositions } from 'renderers/fretboard_renderer'
+import { fretboardPositions, openStringMidis } from 'renderers/fretboard_renderer'
 
 const config = { tuning: ['E', 'A', 'D', 'G', 'B', 'E'], frets: 5 }
+
+describe('openStringMidis', () => {
+  it('reconstructs standard guitar tuning octaves (E2 A2 D3 G3 B3 E4)', () => {
+    expect(openStringMidis(['E', 'A', 'D', 'G', 'B', 'E'])).toEqual([40, 45, 50, 55, 59, 64])
+  })
+
+  it('keeps every string above the previous one', () => {
+    const midis = openStringMidis(['G', 'D', 'A', 'E']) // mandolin, low to high
+    for (let i = 1; i < midis.length; i += 1) expect(midis[i]).toBeGreaterThan(midis[i - 1])
+  })
+})
 
 describe('fretboardPositions', () => {
   it('maps a semitone set to {string, fret, degree} hits', () => {

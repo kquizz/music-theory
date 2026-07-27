@@ -4,7 +4,7 @@ import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { diatonicChords } from 'theory/diatonic'
-import { play } from 'audio/player'
+import { play, playNote } from 'audio/player'
 import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
@@ -52,6 +52,9 @@ export default class extends Controller {
     const rect = canvas.getBoundingClientRect()
     const mx = (event.clientX - rect.left) * (canvas.width / rect.width)
     const my = (event.clientY - rect.top) * (canvas.height / rect.height)
+    // A note/key/fingering click plays that single pitch.
+    const note = (this.noteHits || []).find((h) => mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h)
+    if (note) { playNote(this.ensureAudio(), note.midi); return }
     const center = this.circleCenter || { cx: 700, cy: 300 }
     const hit = circle.hitTest(mx - center.cx, my - center.cy)
     if (!hit) return
@@ -74,14 +77,18 @@ export default class extends Controller {
 
   onTuning() { this.tuningKey = this.tuningTarget.value; this.render() }
 
-  // Sound the current note set: chords play together, scales/notes arpeggiate.
-  // The AudioContext is created lazily on this click (a user gesture).
-  onPlay() {
+  // Lazily create the AudioContext on a user gesture (Play click or note click).
+  ensureAudio() {
     if (!this.audioCtx) {
       const Ctx = window.AudioContext || window.webkitAudioContext
       this.audioCtx = new Ctx()
     }
-    play(this.audioCtx, this.octaveGroups().flat(), { mode: this.modeValue })
+    return this.audioCtx
+  }
+
+  // Sound the current note set: chords play together, scales/notes run up and down.
+  onPlay() {
+    play(this.ensureAudio(), this.octaveGroups().flat(), { mode: this.modeValue })
   }
   onMode() { this.modeValue = this.modeTarget.value; this.populateNameOptions(); this.captureName(); this.update() }
   onRoot() { this.rootValue = this.rootTarget.value; this.update() }
@@ -269,8 +276,10 @@ export default class extends Controller {
     canvas.height = circleCy + outerR + 20
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
-    this.drawInstrumentView(ctx, config, groups, flat)
+    const view = this.drawInstrumentView(ctx, config, groups, flat)
     ctx.restore()
+    // Clickable note/key/fingering regions (canvas coords; instrument view is at 0,0).
+    this.noteHits = (view && view.hits) || []
 
     // Notes on a single staff (left), second octave simply sits higher.
     ctx.save()

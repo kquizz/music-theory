@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { midiToFreq, ascendingMidi } from 'audio/player'
+import { midiToFreq, ascendingMidi, upAndDown } from 'audio/player'
 
 describe('midiToFreq', () => {
   it('maps A4 to 440 Hz and octaves to 2x', () => {
@@ -27,5 +27,24 @@ describe('ascendingMidi', () => {
 
   it('respects a custom base octave', () => {
     expect(ascendingMidi(set([0, 4, 7]), 48)).toEqual([48, 52, 55]) // C3 major triad
+  })
+})
+
+describe('upAndDown', () => {
+  it('adds the octave tonic peak and mirrors back down', () => {
+    expect(upAndDown([60, 62, 64, 65, 67, 69, 71]))
+      .toEqual([60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60])
+  })
+
+  it('does not double the peak when it is already the octave tonic', () => {
+    expect(upAndDown([60, 64, 67, 72])).toEqual([60, 64, 67, 72, 67, 64, 60])
+  })
+
+  it('leaves a single note alone', () => {
+    expect(upAndDown([60])).toEqual([60])
+  })
+
+  it('returns empty for empty input', () => {
+    expect(upAndDown([])).toEqual([])
   })
 })
