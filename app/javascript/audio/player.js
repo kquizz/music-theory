@@ -91,6 +91,18 @@ export function playChordSequence(ctx, noteSets, { bpm = 120, beatsPerChord = 2 
   return ctx
 }
 
+// Play raw MIDI notes: `harmonic` sounds them together (a chord), otherwise they
+// play one per beat (a melodic line / interval). For the ear-training quiz.
+export function playMidis(ctx, midis, { harmonic = false, bpm = 120 } = {}) {
+  if (ctx.state === 'suspended') ctx.resume()
+  const beat = beatSeconds(bpm)
+  const now = ctx.currentTime + 0.05
+  midis.forEach((m, i) => {
+    tone(ctx, midiToFreq(m), harmonic ? now : now + i * beat, harmonic ? beat * 2 : beat * 0.9)
+  })
+  return ctx
+}
+
 // A short metronome click; accented beats are higher and louder.
 export function metronomeClick(ctx, { accent = false, time } = {}) {
   if (ctx.state === 'suspended') ctx.resume()

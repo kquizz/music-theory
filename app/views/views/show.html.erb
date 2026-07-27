@@ -32,6 +32,8 @@
 
     <button data-action="click->music-theory#toggleMetronome" data-music-theory-target="metro">Metronome</button>
 
+    <button data-action="click->music-theory#toggleQuiz" data-music-theory-target="earTraining">🎧 Ear Training</button>
+
     <label class="tempo">
       <input type="range" min="50" max="220" value="120" step="2"
              data-music-theory-target="tempo" data-action="input->music-theory#onTempo">
@@ -42,6 +44,8 @@
   <div class="diatonic" data-music-theory-target="diatonic"></div>
 
   <div class="progressions" data-music-theory-target="progressions"></div>
+
+  <div class="quiz" data-music-theory-target="quiz" hidden></div>
 
   <canvas data-music-theory-target="canvas"></canvas>
 </div>
@@ -72,4 +76,21 @@
   .diatonic button .chord, .progressions button .chord { color: #555; font-size: 0.85em; }
   .progressions button .roman { letter-spacing: 0.02em; }
   .progressions { border-top: 1px solid #eee; padding-top: 10px; }
+
+  .quiz { margin: 10px 0; padding: 14px; border: 1px solid #e2e2e2; border-radius: 10px; max-width: 620px; }
+  .quiz[hidden] { display: none; }
+  .quiz-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .quiz-tab { padding: 4px 12px; border: 1px solid #ccc; border-radius: 6px; background: #fafafa; cursor: pointer; font: inherit; }
+  .quiz-tab.active { background: #8ec3ff; border-color: #8ec3ff; color: #fff; }
+  .quiz-score { margin-left: auto; color: #555; font-size: 0.9em; }
+  .quiz-replay { margin-bottom: 12px; padding: 6px 12px; font: inherit; cursor: pointer; }
+  .quiz-answers { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .quiz-answers button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; background: #fafafa; cursor: pointer; font: inherit; }
+  .quiz-answers button:hover:not(:disabled) { background: #eef4ff; border-color: #8ec3ff; }
+  .quiz-answers button.correct { background: #d7f5dd; border-color: #3fb950; }
+  .quiz-answers button.wrong { background: #ffe0e0; border-color: #e5534b; }
+  .quiz-feedback { min-height: 1.3em; font-weight: 600; margin-bottom: 8px; }
+  .quiz-feedback.ok { color: #2ea043; }
+  .quiz-feedback.no { color: #cf3b34; }
+  .quiz-next { padding: 6px 16px; font: inherit; cursor: pointer; }
 </style>

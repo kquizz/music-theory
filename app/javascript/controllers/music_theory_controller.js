@@ -5,7 +5,8 @@ import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { diatonicChords } from 'theory/diatonic'
 import { PROGRESSIONS, progressionChords } from 'theory/progressions'
-import { play, playNote, playChordSequence, beatSeconds, playbackDuration, metronomeClick } from 'audio/player'
+import { EAR_INTERVALS, EAR_CHORDS, intervalMidis, chordMidis } from 'theory/ear_training'
+import { play, playNote, playChordSequence, playMidis, beatSeconds, playbackDuration, metronomeClick } from 'audio/player'
 import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
@@ -17,7 +18,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro', 'earTraining', 'quiz']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -144,6 +145,132 @@ export default class extends Controller {
   stopMetronome() {
     if (this.metroTimer) { clearInterval(this.metroTimer); this.metroTimer = null }
     if (this.hasMetroTarget) this.metroTarget.textContent = 'Metronome'
+  }
+
+  // ----- Ear-training quiz -----------------------------------------------------
+  // A self-contained mode: hear a random interval or chord and pick it. The
+  // visualizer is hidden while quizzing so the answer isn't given away.
+  toggleQuiz() {
+    if (!this.quiz) this.quiz = { active: false, category: 'intervals', score: { c: 0, t: 0 } }
+    this.quiz.active = !this.quiz.active
+    if (this.hasEarTrainingTarget) {
+      this.earTrainingTarget.textContent = this.quiz.active ? '✕ Close Quiz' : '🎧 Ear Training'
+    }
+    const hide = this.quiz.active ? 'none' : ''
+    this.canvasTarget.style.display = hide
+    if (this.hasDiatonicTarget) this.diatonicTarget.style.display = hide
+    if (this.hasProgressionsTarget) this.progressionsTarget.style.display = hide
+    if (this.quiz.active) { this.quiz.score = { c: 0, t: 0 }; this.quizNewQuestion() } else { this.renderQuizPanel() }
+  }
+
+  quizNewQuestion() {
+    const q = this.quiz
+    q.answered = false
+    q.picked = null
+    const rootMidi = 57 + Math.floor(Math.random() * 13) // A3..A4
+    if (q.category === 'intervals') {
+      const it = EAR_INTERVALS[Math.floor(Math.random() * EAR_INTERVALS.length)]
+      q.answerId = it.semitones
+      q.midis = intervalMidis(rootMidi, it.semitones)
+      q.harmonic = false
+    } else {
+      const it = EAR_CHORDS[Math.floor(Math.random() * EAR_CHORDS.length)]
+      q.answerId = it.key
+      q.midis = chordMidis(rootMidi, it.intervals)
+      q.harmonic = true
+    }
+    this.renderQuizPanel()
+    this.quizPlay()
+  }
+
+  quizPlay() {
+    playMidis(this.ensureAudio(), this.quiz.midis, { harmonic: this.quiz.harmonic, bpm: this.bpm })
+  }
+
+  quizAnswer(id) {
+    const q = this.quiz
+    if (q.answered) return
+    q.picked = id
+    q.answered = true
+    q.score.t += 1
+    if (id === q.answerId) q.score.c += 1
+    this.renderQuizPanel()
+  }
+
+  quizNext() { this.quizNewQuestion() }
+
+  quizSetCategory(cat) { this.quiz.category = cat; this.quizNewQuestion() }
+
+  renderQuizPanel() {
+    if (!this.hasQuizTarget) return
+    const q = this.quiz
+    const panel = this.quizTarget
+    panel.innerHTML = ''
+    panel.hidden = !q || !q.active
+    if (panel.hidden) return
+
+    const cat = q.category
+    const items = cat === 'intervals' ? EAR_INTERVALS : EAR_CHORDS
+    const idOf = (it) => (cat === 'intervals' ? it.semitones : it.key)
+    const labelOf = (it) => (cat === 'intervals' ? `${it.short} · ${it.name}` : it.name)
+
+    const head = document.createElement('div')
+    head.className = 'quiz-head'
+    ;[['intervals', 'Intervals'], ['chords', 'Chords']].forEach(([c, label]) => {
+      const tab = document.createElement('button')
+      tab.type = 'button'
+      tab.textContent = label
+      tab.className = 'quiz-tab' + (c === cat ? ' active' : '')
+      tab.addEventListener('click', () => this.quizSetCategory(c))
+      head.appendChild(tab)
+    })
+    const score = document.createElement('span')
+    score.className = 'quiz-score'
+    score.textContent = `Score: ${q.score.c}/${q.score.t}`
+    head.appendChild(score)
+    panel.appendChild(head)
+
+    const replay = document.createElement('button')
+    replay.type = 'button'
+    replay.className = 'quiz-replay'
+    replay.textContent = '🔊 Replay'
+    replay.addEventListener('click', () => this.quizPlay())
+    panel.appendChild(replay)
+
+    const answers = document.createElement('div')
+    answers.className = 'quiz-answers'
+    items.forEach((it) => {
+      const id = idOf(it)
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.textContent = labelOf(it)
+      if (q.answered) {
+        if (id === q.answerId) b.classList.add('correct')
+        else if (id === q.picked) b.classList.add('wrong')
+        b.disabled = true
+      }
+      b.addEventListener('click', () => this.quizAnswer(id))
+      answers.appendChild(b)
+    })
+    panel.appendChild(answers)
+
+    const fb = document.createElement('div')
+    fb.className = 'quiz-feedback'
+    if (q.answered) {
+      const correct = q.picked === q.answerId
+      const ans = items.find((it) => idOf(it) === q.answerId)
+      fb.textContent = correct ? '✓ Correct!' : `✗ It was ${ans.name}`
+      fb.classList.add(correct ? 'ok' : 'no')
+      const next = document.createElement('button')
+      next.type = 'button'
+      next.className = 'quiz-next'
+      next.textContent = 'Next ▶'
+      next.addEventListener('click', () => this.quizNext())
+      panel.appendChild(fb)
+      panel.appendChild(next)
+    } else {
+      panel.appendChild(fb)
+    }
   }
   onMode() { this.modeValue = this.modeTarget.value; this.populateNameOptions(); this.captureName(); this.update() }
   onRoot() { this.rootValue = this.rootTarget.value; this.update() }
