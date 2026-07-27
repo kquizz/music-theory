@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { trumpetFingering, valveFingering, slidePosition, absolutePitches } from 'renderers/fingering_renderer'
+import { trumpetFingering, valveFingering, slidePosition, tubaFingering, absolutePitches } from 'renderers/fingering_renderer'
 
 describe('trumpetFingering (by absolute pitch)', () => {
   it('fingers the low/middle register from the standard chart', () => {
@@ -68,6 +68,29 @@ describe('slidePosition (tenor trombone)', () => {
     expect(slidePosition(68)).toBe(3) // Ab4
     expect(slidePosition(67)).toBe(4) // G4
     expect(slidePosition(70)).toBe(1) // Bb4
+  })
+})
+
+describe('tubaFingering (BB♭, 3-valve, derived from the overtone series)', () => {
+  it('opens on the B♭ overtone series', () => {
+    expect(tubaFingering(46)).toEqual([]) // Bb2
+    expect(tubaFingering(53)).toEqual([]) // F3
+    expect(tubaFingering(58)).toEqual([]) // Bb3
+    expect(tubaFingering(50)).toEqual([]) // D3
+  })
+
+  it('matches the standard BB♭ chart around the staff', () => {
+    expect(tubaFingering(48)).toEqual([1]) //    C3  1st
+    expect(tubaFingering(52)).toEqual([2]) //    E3  2nd
+    expect(tubaFingering(55)).toEqual([1, 2]) // G3  1-2
+    expect(tubaFingering(57)).toEqual([2]) //    A3  2nd
+  })
+
+  it('handles the low register (E2..D2)', () => {
+    expect(tubaFingering(40)).toEqual([2]) //    E2  2nd
+    expect(tubaFingering(41)).toEqual([]) //     F2  open
+    expect(tubaFingering(39)).toEqual([1]) //    Eb2 1st
+    expect(tubaFingering(38)).toEqual([1, 2]) // D2  1-2
   })
 })
 

@@ -51,24 +51,40 @@ export function trumpetFingering(midi) {
   return TRUMPET[midi] || THREE_VALVE[((midi % 12) + 12) % 12]
 }
 
-// Fingering for a valve-brass instrument. `trumpet` uses the octave-aware trumpet
-// table (shared by B♭ treble-clef brass like euphonium/baritone T.C.); `three-valve`
-// uses the generic pitch-class chart for other 3-valve instruments.
-export function valveFingering(midi, system = 'trumpet') {
-  if (system === 'three-valve') return THREE_VALVE[((midi % 12) + 12) % 12]
-  return trumpetFingering(midi)
+// How many semitones (0..6) a note sits below the nearest open (1st-position /
+// no-valve) partial of a B♭ brass instrument, skipping the out-of-tune 7th/11th
+// partials. This is the physical basis for both slide positions and valve combos.
+function harmonicLowering(midi, partials) {
+  for (let d = 0; d <= 6; d += 1) if (partials.includes(midi + d)) return d
+  return null
 }
 
-// Tenor trombone (B♭). Usable notes in 1st position are the B♭ overtone series
-// (skipping the out-of-tune 7th/11th partials). Extending the slide to position P
-// lowers pitch by (P-1) semitones, so the primary position for a note is the
-// lowest P in 1..7 that reaches a 1st-position partial. Returns null if unreachable.
-const SLIDE_PARTIALS = [34, 46, 53, 58, 62, 65, 70, 72, 74, 77] // Bb1, Bb2, F3, Bb3, D4, F4, Bb4, C5, D5, F5
+// Valve combination that lowers the open pitch by d semitones (standard 3-valve
+// system: 2nd=−1, 1st=−2, 1+2=−3, 2+3=−4, 1+3=−5, all three=−6).
+const LOWER_TO_VALVES = [[], [2], [1], [1, 2], [2, 3], [1, 3], [1, 2, 3]]
+
+// Tenor trombone (B♭): 1st-position B♭ overtone series. Slide position = lowering + 1.
+const SLIDE_PARTIALS = [34, 46, 53, 58, 62, 65, 70, 72, 74, 77] // Bb1 Bb2 F3 Bb3 D4 F4 Bb4 C5 D5 F5
 export function slidePosition(midi) {
-  for (let p = 1; p <= 7; p += 1) {
-    if (SLIDE_PARTIALS.includes(midi + (p - 1))) return p
-  }
-  return null
+  const d = harmonicLowering(midi, SLIDE_PARTIALS)
+  return d == null ? null : d + 1
+}
+
+// BB♭ tuba: open (no-valve) overtone series, an octave below the trombone's.
+const TUBA_PARTIALS = [22, 34, 41, 46, 50, 53, 58, 60, 62, 65] // Bb0 Bb1 F2 Bb2 D3 F3 Bb3 C4 D4 F4
+export function tubaFingering(midi) {
+  const d = harmonicLowering(midi, TUBA_PARTIALS)
+  return d == null ? [] : LOWER_TO_VALVES[d]
+}
+
+// Fingering for a valve-brass instrument. `trumpet` uses the octave-aware trumpet
+// table (shared by B♭ treble-clef brass like euphonium/baritone T.C.); `bbb-tuba`
+// derives the BB♭ tuba combo from the overtone series; `three-valve` is a generic
+// pitch-class fallback.
+export function valveFingering(midi, system = 'trumpet') {
+  if (system === 'bbb-tuba') return tubaFingering(midi)
+  if (system === 'three-valve') return THREE_VALVE[((midi % 12) + 12) % 12]
+  return trumpetFingering(midi)
 }
 
 // Pure: assign ascending absolute pitches (MIDI) to a note sequence, starting the
