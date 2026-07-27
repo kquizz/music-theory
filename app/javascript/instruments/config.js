@@ -51,6 +51,9 @@ export const INSTRUMENTS = {
   euphonium: {
     name: 'Baritone / Euphonium (T.C.)', type: 'brass', valves: 3, clef: 'treble', fingering: 'trumpet',
   },
+  trombone: {
+    name: 'Trombone', type: 'brass', clef: 'bass', fingering: 'slide', baseMidi: 48,
+  },
 }
 
 // First tuning key for an instrument (its default).

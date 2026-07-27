@@ -59,6 +59,18 @@ export function valveFingering(midi, system = 'trumpet') {
   return trumpetFingering(midi)
 }
 
+// Tenor trombone (B♭). Usable notes in 1st position are the B♭ overtone series
+// (skipping the out-of-tune 7th/11th partials). Extending the slide to position P
+// lowers pitch by (P-1) semitones, so the primary position for a note is the
+// lowest P in 1..7 that reaches a 1st-position partial. Returns null if unreachable.
+const SLIDE_PARTIALS = [34, 46, 53, 58, 62, 65, 70, 72, 74, 77] // Bb1, Bb2, F3, Bb3, D4, F4, Bb4, C5, D5, F5
+export function slidePosition(midi) {
+  for (let p = 1; p <= 7; p += 1) {
+    if (SLIDE_PARTIALS.includes(midi + (p - 1))) return p
+  }
+  return null
+}
+
 // Pure: assign ascending absolute pitches (MIDI) to a note sequence, starting the
 // first note in octave 4 (C4 = 60) and climbing so each note is higher than the
 // previous — so a 2-octave scale gets its real upper-octave pitches (and thus the
@@ -77,10 +89,35 @@ const LAYOUT = {
   x: 20, y: 30, cardWidth: 74, cardGap: 26, valveRadius: 11, valveGap: 6, rowStride: 110,
 }
 
+// A trombone slide: a horizontal rail with 7 position ticks and a filled marker
+// at the note's primary position, plus the position number below.
+function drawSlide(ctx, cx, valveY, midi, color) {
+  const pos = slidePosition(midi)
+  const halfW = 33
+  const y = valveY
+  ctx.strokeStyle = '#333'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(cx - halfW, y)
+  ctx.lineTo(cx + halfW, y)
+  ctx.stroke()
+  for (let i = 1; i <= 7; i += 1) {
+    const tx = cx - halfW + (2 * halfW) * (i - 1) / 6
+    const on = i === pos
+    ctx.beginPath()
+    ctx.arc(tx, y, on ? 6 : 2.5, 0, Math.PI * 2)
+    ctx.fillStyle = on ? color : '#bbb'
+    ctx.fill()
+  }
+  ctx.fillStyle = pos ? color : '#666'
+  ctx.font = pos ? 'bold 14px sans-serif' : 'italic 11px sans-serif'
+  ctx.fillText(pos ? `${pos}${pos === 1 ? 'st' : pos === 2 ? 'nd' : pos === 3 ? 'rd' : 'th'}` : '—',
+    cx, y + 20)
+}
+
 function drawCard(ctx, config, note, midi, cardLeft, topY, accidental, showDivider) {
   const cx = cardLeft + LAYOUT.cardWidth / 2
   const valveY = topY + 40
-  const pressed = valveFingering(midi, config.fingering)
   const color = colorForDegree(note.degree)
 
   if (showDivider) {
@@ -100,6 +137,12 @@ function drawCard(ctx, config, note, midi, cardLeft, topY, accidental, showDivid
   ctx.font = 'bold 18px sans-serif'
   ctx.fillText(numberToNote(note.semitone, accidental), cx, topY)
 
+  if (config.fingering === 'slide') {
+    drawSlide(ctx, cx, valveY, midi, color)
+    return
+  }
+
+  const pressed = valveFingering(midi, config.fingering)
   const totalW = 3 * (LAYOUT.valveRadius * 2) + 2 * LAYOUT.valveGap
   const startX = cx - totalW / 2 + LAYOUT.valveRadius
   for (let v = 1; v <= (config.valves || 3); v++) {
@@ -128,7 +171,7 @@ function drawCard(ctx, config, note, midi, cardLeft, topY, accidental, showDivid
 // two octaves stack on two lines. Pitches are numbered continuously across groups
 // so the upper row gets its correct upper-register fingerings.
 export function draw(ctx, config, groups, { accidental = 'sharp' } = {}) {
-  const midis = absolutePitches(groups.flat())
+  const midis = absolutePitches(groups.flat(), config.baseMidi || 60)
   const maxCards = Math.max(...groups.map((g) => g.length), 1)
   const width = LAYOUT.x * 2 + maxCards * (LAYOUT.cardWidth + LAYOUT.cardGap)
   const height = LAYOUT.y + groups.length * LAYOUT.rowStride

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { trumpetFingering, valveFingering, absolutePitches } from 'renderers/fingering_renderer'
+import { trumpetFingering, valveFingering, slidePosition, absolutePitches } from 'renderers/fingering_renderer'
 
 describe('trumpetFingering (by absolute pitch)', () => {
   it('fingers the low/middle register from the standard chart', () => {
@@ -38,6 +38,36 @@ describe('valveFingering (per-instrument system)', () => {
 
   it('defaults to the trumpet system', () => {
     expect(valveFingering(74)).toEqual([1])
+  })
+})
+
+describe('slidePosition (tenor trombone)', () => {
+  it('puts the B♭ overtone series in 1st position', () => {
+    expect(slidePosition(46)).toBe(1) // Bb2
+    expect(slidePosition(53)).toBe(1) // F3
+    expect(slidePosition(58)).toBe(1) // Bb3
+    expect(slidePosition(62)).toBe(1) // D4
+    expect(slidePosition(65)).toBe(1) // F4
+  })
+
+  it('matches the standard chart for the low register', () => {
+    expect(slidePosition(45)).toBe(2) // A2  2nd
+    expect(slidePosition(43)).toBe(4) // G2  4th
+    expect(slidePosition(41)).toBe(6) // F2  6th
+    expect(slidePosition(40)).toBe(7) // E2  7th
+  })
+
+  it('matches the standard chart around the bass staff', () => {
+    expect(slidePosition(52)).toBe(2) // E3  2nd
+    expect(slidePosition(60)).toBe(3) // C4  3rd
+    expect(slidePosition(55)).toBe(4) // G3  4th
+    expect(slidePosition(50)).toBe(4) // D3  4th
+  })
+
+  it('skips the out-of-tune 7th partial (Ab4 is 3rd via the Bb4 partial, not 1st)', () => {
+    expect(slidePosition(68)).toBe(3) // Ab4
+    expect(slidePosition(67)).toBe(4) // G4
+    expect(slidePosition(70)).toBe(1) // Bb4
   })
 })
 
