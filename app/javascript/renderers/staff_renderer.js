@@ -28,9 +28,11 @@ export function staffPlacement(noteName) {
 // not diatonic step — so a chromatic run keeps sharps/flats on their natural's
 // line (C# shares C's line with a ♯) instead of jumping an octave per accidental.
 // `abs` is the diatonic staff index (7 per octave); C4 = 0, E4 (bottom line) = 2.
-export function ascendingPlacements(noteNames) {
+// `startOctave` shifts the whole line (bass clef starts an octave lower so the
+// notes land inside the bass staff rather than floating above it).
+export function ascendingPlacements(noteNames, startOctave = 0) {
   let prevPitch = -Infinity
-  let octave = 0
+  let octave = startOctave
   return noteNames.map((name) => {
     const { letter, step, accidental } = staffPlacement(name)
     const pitchClass = noteToNumber(name)
@@ -40,14 +42,16 @@ export function ascendingPlacements(noteNames) {
   })
 }
 
-// Ledger-line diatonic positions (even `abs`) needed for a note outside the
-// staff. Bottom line E4 = abs 2, top line F5 = abs 10; middle C4 = abs 0.
-function ledgerPositions(abs) {
+// Ledger-line diatonic positions (even `abs`) needed for a note outside the staff,
+// given the staff's bottom line. Treble bottom = abs 2 (E4); bass bottom = abs -10
+// (G2). The staff is 5 lines, so the top line is bottomLineAbs + 8.
+function ledgerPositions(abs, bottomLineAbs) {
+  const topLineAbs = bottomLineAbs + 8
   const ledgers = []
-  if (abs <= 1) {
-    for (let l = 0; l >= abs; l -= 2) ledgers.push(l)
-  } else if (abs >= 11) {
-    for (let l = 12; l <= abs; l += 2) ledgers.push(l)
+  if (abs < bottomLineAbs) {
+    for (let l = bottomLineAbs - 2; l >= abs; l -= 2) ledgers.push(l)
+  } else if (abs > topLineAbs) {
+    for (let l = topLineAbs + 2; l <= abs; l += 2) ledgers.push(l)
   }
   return ledgers
 }
@@ -56,8 +60,9 @@ function ledgerPositions(abs) {
 // `yTop`. Key signatures are treble-clef only for now (SIG_ABS positions).
 function drawStaff(ctx, notes, yTop, { accidental, clef, keySig }) {
   const staffLeft = LAYOUT.x + LAYOUT.clefWidth
-  const bottomLineY = yTop + 4 * LAYOUT.lineGap // E4, bottom staff line
-  const absToY = (abs) => bottomLineY - (abs - 2) * (LAYOUT.lineGap / 2)
+  const bottomLineY = yTop + 4 * LAYOUT.lineGap // bottom staff line
+  const bottomLineAbs = clef === 'bass' ? -10 : 2 // G2 (bass) vs E4 (treble)
+  const absToY = (abs) => bottomLineY - (abs - bottomLineAbs) * (LAYOUT.lineGap / 2)
   const sig = clef === 'treble' && keySig ? keySig : EMPTY_SIG
 
   ctx.strokeStyle = '#333'
@@ -87,7 +92,7 @@ function drawStaff(ctx, notes, yTop, { accidental, clef, keySig }) {
   const sigWidth = sig.letters.length ? sig.letters.length * SIG_STEP + 8 : 0
 
   const names = notes.map((n) => numberToNote(n.semitone, accidental))
-  const placements = ascendingPlacements(names)
+  const placements = ascendingPlacements(names, clef === 'bass' ? -1 : 0)
   const covered = new Set(sig.letters)
   const sigChar = SIG_GLYPH[sig.type] === '♯' ? '#' : 'b'
   const spacing = (LAYOUT.width - 50 - sigWidth) / Math.max(notes.length, 1)
@@ -98,7 +103,7 @@ function drawStaff(ctx, notes, yTop, { accidental, clef, keySig }) {
     const y = absToY(p.abs)
 
     ctx.strokeStyle = '#333'
-    ledgerPositions(p.abs).forEach((l) => {
+    ledgerPositions(p.abs, bottomLineAbs).forEach((l) => {
       const ly = absToY(l)
       ctx.beginPath()
       ctx.moveTo(x - 14, ly)

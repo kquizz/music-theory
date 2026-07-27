@@ -47,4 +47,11 @@ describe('ascendingPlacements', () => {
     const abs = ascendingPlacements(['C', 'C#', 'D', 'D#', 'E']).map((p) => p.abs)
     expect(abs).toEqual([0, 0, 1, 1, 2]) // C# on C's line, D# on D's line
   })
+
+  it('shifts the whole line down an octave for a lower start (bass clef voicing)', () => {
+    // C major triad started an octave lower -> C3 E3 G3 (abs -7 -5 -3),
+    // which lands inside the bass staff (bottom line G2 = abs -10).
+    const abs = ascendingPlacements(['C', 'E', 'G'], -1).map((p) => p.abs)
+    expect(abs).toEqual([-7, -5, -3])
+  })
 })

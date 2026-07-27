@@ -47,7 +47,10 @@ export const INSTRUMENTS = {
     },
   },
   piano: { name: 'Piano', type: 'keyboard', octaves: 2, startNote: 'C' },
-  trumpet: { name: 'Trumpet (B♭)', type: 'brass', valves: 3, clef: 'treble' },
+  trumpet: { name: 'Trumpet (B♭)', type: 'brass', valves: 3, clef: 'treble', fingering: 'trumpet' },
+  euphonium: {
+    name: 'Baritone / Euphonium (T.C.)', type: 'brass', valves: 3, clef: 'treble', fingering: 'trumpet',
+  },
 }
 
 // First tuning key for an instrument (its default).

@@ -51,6 +51,14 @@ export function trumpetFingering(midi) {
   return TRUMPET[midi] || THREE_VALVE[((midi % 12) + 12) % 12]
 }
 
+// Fingering for a valve-brass instrument. `trumpet` uses the octave-aware trumpet
+// table (shared by B♭ treble-clef brass like euphonium/baritone T.C.); `three-valve`
+// uses the generic pitch-class chart for other 3-valve instruments.
+export function valveFingering(midi, system = 'trumpet') {
+  if (system === 'three-valve') return THREE_VALVE[((midi % 12) + 12) % 12]
+  return trumpetFingering(midi)
+}
+
 // Pure: assign ascending absolute pitches (MIDI) to a note sequence, starting the
 // first note in octave 4 (C4 = 60) and climbing so each note is higher than the
 // previous — so a 2-octave scale gets its real upper-octave pitches (and thus the
@@ -72,7 +80,7 @@ const LAYOUT = {
 function drawCard(ctx, config, note, midi, cardLeft, topY, accidental, showDivider) {
   const cx = cardLeft + LAYOUT.cardWidth / 2
   const valveY = topY + 40
-  const pressed = trumpetFingering(midi)
+  const pressed = valveFingering(midi, config.fingering)
   const color = colorForDegree(note.degree)
 
   if (showDivider) {

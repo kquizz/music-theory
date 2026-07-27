@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { trumpetFingering, absolutePitches } from 'renderers/fingering_renderer'
+import { trumpetFingering, valveFingering, absolutePitches } from 'renderers/fingering_renderer'
 
 describe('trumpetFingering (by absolute pitch)', () => {
   it('fingers the low/middle register from the standard chart', () => {
@@ -21,6 +21,23 @@ describe('trumpetFingering (by absolute pitch)', () => {
 
   it('falls back to the pitch-class chart outside the tabulated range', () => {
     expect(trumpetFingering(90)).toEqual([2]) // 90 % 12 = 6 (F#) -> 2
+  })
+})
+
+describe('valveFingering (per-instrument system)', () => {
+  it('the trumpet system matches the octave-aware trumpet chart (euphonium T.C.)', () => {
+    expect(valveFingering(62, 'trumpet')).toEqual([1, 3]) // D4
+    expect(valveFingering(74, 'trumpet')).toEqual([1]) //    D5 (octave-aware)
+  })
+
+  it('the three-valve system is purely pitch-class based (no octave quirks)', () => {
+    // low and high D both give the generic 1-3, unlike the trumpet chart
+    expect(valveFingering(62, 'three-valve')).toEqual([1, 3])
+    expect(valveFingering(74, 'three-valve')).toEqual([1, 3])
+  })
+
+  it('defaults to the trumpet system', () => {
+    expect(valveFingering(74)).toEqual([1])
   })
 })
 
