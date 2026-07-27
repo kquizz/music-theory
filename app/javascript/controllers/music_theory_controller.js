@@ -4,7 +4,8 @@ import { SCALES } from 'theory/scales'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { diatonicChords } from 'theory/diatonic'
-import { play, playNote } from 'audio/player'
+import { PROGRESSIONS, progressionChords } from 'theory/progressions'
+import { play, playNote, playChordSequence } from 'audio/player'
 import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
@@ -16,7 +17,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'play']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -200,6 +201,24 @@ export default class extends Controller {
     })
   }
 
+  // Common progressions in the current key (scale mode only). Each button plays
+  // its chords in sequence; the roman labels come from the scale's diatonic chords.
+  populateProgressions() {
+    if (!this.hasProgressionsTarget) return
+    this.progressionsTarget.innerHTML = ''
+    if (this.modeValue !== 'scale') return
+    PROGRESSIONS.forEach((prog) => {
+      const chords = progressionChords(this.rootValue, this.nameValue, this.accidental, prog.degrees)
+      if (!chords.length) return
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      const romans = chords.map((c) => c.roman).join(' – ')
+      btn.innerHTML = `<span class="roman">${romans}</span><span class="chord">▶ ${prog.name}</span>`
+      btn.addEventListener('click', () => playChordSequence(this.ensureAudio(), chords.map((c) => c.notes)))
+      this.progressionsTarget.appendChild(btn)
+    })
+  }
+
   selectDiatonic(chord) {
     this.modeValue = 'chord'
     this.modeTarget.value = 'chord'
@@ -251,6 +270,7 @@ export default class extends Controller {
 
   render() {
     this.populateDiatonic()
+    this.populateProgressions()
     const config = this.effectiveConfig()
     const canvas = this.canvasTarget
     const ctx = canvas.getContext('2d')

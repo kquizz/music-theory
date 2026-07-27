@@ -66,3 +66,14 @@ export function playNote(ctx, midi) {
   tone(ctx, midiToFreq(midi), ctx.currentTime + 0.02, 0.6)
   return ctx
 }
+
+// Play a sequence of chords (each a note set) as blocks, one per beat.
+export function playChordSequence(ctx, noteSets, { chordDur = 1.0 } = {}) {
+  if (ctx.state === 'suspended') ctx.resume()
+  let t = ctx.currentTime + 0.05
+  noteSets.forEach((notes) => {
+    ascendingMidi(notes).forEach((m) => tone(ctx, midiToFreq(m), t, chordDur * 0.92))
+    t += chordDur
+  })
+  return ctx
+}
