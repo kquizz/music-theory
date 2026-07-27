@@ -35,6 +35,17 @@
 </div>
 
 <style>
+  /* Responsive: let #app shrink inside the flex layout, scale the canvas to fit,
+     and wrap the controls. Touch taps already map correctly (the click handler
+     scales client coords by canvas.width/rect.width). */
+  #app { flex: 1 1 auto; min-width: 0; width: 100%; }
+  canvas { max-width: 100%; height: auto; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .controls select, .controls button { font: inherit; padding: 4px 8px; }
+  @media (max-width: 640px) {
+    main { margin-top: 1.25rem !important; padding-left: 12px !important; padding-right: 12px !important; }
+  }
+
   .diatonic { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
   .diatonic:empty { display: none; }
   .diatonic button {
