@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { scaleNotes, SCALES, stepPattern } from 'theory/scales'
-import { relativePair } from 'theory/scales'
+import { relativePair, GROUP_ORDER, scaleGroup } from 'theory/scales'
 import { circleShape } from 'theory/circle_shape'
 
 const semis = (root, key) => scaleNotes(root, key).map((n) => n.semitone)
@@ -134,5 +134,33 @@ describe('relativePair', () => {
       const min = [...SCALES[minor].intervals].sort((a, b) => a - b)
       expect(maj).toEqual(min)
     }
+  })
+})
+
+describe('scale catalog', () => {
+  it('every scale starts on the root, rises, and stays inside one octave', () => {
+    for (const [key, { intervals }] of Object.entries(SCALES)) {
+      expect(intervals[0], key).toBe(0)
+      intervals.slice(1).forEach((v, i) => expect(v, key).toBeGreaterThan(intervals[i]))
+      expect(intervals.at(-1), key).toBeLessThan(12)
+    }
+  })
+
+  it('every visible scale lands in a known dropdown group', () => {
+    for (const key of Object.keys(SCALES)) {
+      if (SCALES[key].alias) continue
+      expect(GROUP_ORDER, key).toContain(scaleGroup(key))
+    }
+  })
+
+  it('has unique display names among visible scales', () => {
+    const names = Object.values(SCALES).filter((s) => !s.alias).map((s) => s.name)
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  it('spells out the world scales correctly', () => {
+    expect(SCALES.hirajoshi.intervals).toEqual([0, 2, 3, 7, 8])
+    expect(SCALES.raga_bhairav.intervals).toEqual(SCALES.double_harmonic.intervals)
+    expect(stepPattern(SCALES.double_harmonic.intervals)).toBe('H W+H H W H W+H H')
   })
 })

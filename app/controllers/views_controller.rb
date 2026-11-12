@@ -6,7 +6,12 @@ class ViewsController < ApplicationController
   SCALES = %w[major dorian phrygian lydian mixolydian aeolian minor locrian
               major_pentatonic minor_pentatonic blues major_blues harmonic_minor
               melodic_minor phrygian_dominant lydian_dominant altered whole_tone
-              diminished_wh diminished_hw hungarian_minor].freeze
+              diminished_wh diminished_hw hungarian_minor chinese_gong chinese_shang
+              chinese_jue chinese_zhi chinese_yu hirajoshi in_sen insen iwato yo kumoi
+              pelog slendro raga_bhairav raga_todi raga_marwa raga_purvi raga_bhupali
+              double_harmonic persian hungarian_major ukrainian_dorian neapolitan_minor
+              neapolitan_major enigmatic greek_chromatic greek_enharmonic prometheus
+              augmented bebop_dominant bebop_major chromatic].freeze
   CHORDS = %w[maj min dim aug sus2 sus4 power5 maj6 m6 sixnine maj7 dom7 m7 mmaj7
               dim7 m7b5 aug7 dom7sus4 add9 dom9 maj9 m9 dom11 dom13 dom7b9 dom7s9].freeze
 

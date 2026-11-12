@@ -22,6 +22,8 @@ const MAJOR_ACCIDENTAL = [
 const MINOR_SCALES = new Set([
   'dorian', 'phrygian', 'aeolian', 'minor', 'locrian',
   'minor_pentatonic', 'blues', 'harmonic_minor', 'melodic_minor', 'hungarian_minor',
+  'chinese_jue', 'chinese_yu', 'hirajoshi', 'kumoi', 'pelog', 'raga_todi',
+  'neapolitan_minor', 'neapolitan_major', 'ukrainian_dorian',
 ])
 const MINOR_CHORDS = new Set(['min', 'm6', 'm7', 'mmaj7', 'm9', 'dim', 'dim7', 'm7b5'])
 

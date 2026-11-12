@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus'
 import { INSTRUMENTS, defaultTuningKey, tuningStrings } from 'instruments/config'
-import { SCALES, stepPattern, relativePair } from 'theory/scales'
+import { SCALES, stepPattern, relativePair, GROUP_ORDER, scaleGroup } from 'theory/scales'
 import { circleShape } from 'theory/circle_shape'
 import { relativeModes } from 'theory/modes'
 import { CHORDS } from 'theory/chords'
@@ -454,13 +454,26 @@ export default class extends Controller {
     this.nameTarget.disabled = mode === 'notes'
     const table = mode === 'chord' ? CHORDS : mode === 'scale' ? SCALES : {}
     this.nameTarget.innerHTML = ''
-    Object.keys(table).forEach((key) => {
-      if (table[key].alias) return
+    const option = (key) => {
       const opt = document.createElement('option')
       opt.value = key
       opt.textContent = table[key].name
-      this.nameTarget.appendChild(opt)
-    })
+      return opt
+    }
+    const keys = Object.keys(table).filter((key) => !table[key].alias)
+    if (mode === 'scale') {
+      // Scales are many; section them (Western modes, East Asian, Indian ragas...).
+      GROUP_ORDER.forEach((label) => {
+        const inGroup = keys.filter((key) => scaleGroup(key) === label)
+        if (!inGroup.length) return
+        const group = document.createElement('optgroup')
+        group.label = label
+        inGroup.forEach((key) => group.appendChild(option(key)))
+        this.nameTarget.appendChild(group)
+      })
+    } else {
+      keys.forEach((key) => this.nameTarget.appendChild(option(key)))
+    }
     const usesName = mode === 'scale' || mode === 'chord'
     if (usesName && (!this.nameValue || !table[this.nameValue])) {
       this.nameValue = Object.keys(table).find((key) => !table[key].alias)
