@@ -53,7 +53,10 @@
 
   <div class="scale-info" data-music-theory-target="scaleInfo" hidden></div>
 
-  <canvas data-music-theory-target="canvas"></canvas>
+  <div class="canvas-wrap">
+    <canvas data-music-theory-target="canvas"></canvas>
+    <a class="circle-switch" data-music-theory-target="tonnetzSwitch" href="/tonnetz" title="See this key's chord on the Tonnetz donut">🍩 Tonnetz view</a>
+  </div>
 </div>
 
 <style>
@@ -62,6 +65,9 @@
      scales client coords by canvas.width/rect.width). */
   #app { flex: 1 1 auto; min-width: 0; width: 100%; }
   canvas { max-width: 100%; height: auto; }
+  .canvas-wrap { position: relative; display: inline-block; max-width: 100%; }
+  .circle-switch { position: absolute; transform: translate(-100%, 0); font-size: 0.8rem; padding: 3px 8px; border: 1px solid #ccc; border-radius: 999px; background: #fff; color: #333; text-decoration: none; white-space: nowrap; }
+  .circle-switch:hover { background: #eef4ff; border-color: #8ec3ff; }
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
   .controls select, .controls button { font: inherit; padding: 4px 8px; }
   .controls .tempo { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #555; }

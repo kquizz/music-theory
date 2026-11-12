@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 import { playMidis, playNote } from 'audio/player'
 import { createTonnetzScene } from 'renderers/tonnetz_scene'
-import { neighbors, triadName, triadMidis, noteName } from 'theory/tonnetz'
+import { neighbors, triadName, triadMidis, noteName, triadAt } from 'theory/tonnetz'
 
 export default class extends Controller {
   static targets = ['stage', 'name', 'neighbors', 'fifths', 'unroll']
@@ -15,6 +15,11 @@ export default class extends Controller {
       onPickNote: (pc) => playNote(this.ensureAudio(), 60 + pc),
     })
     this.renderInfo()
+    // Arriving from the circle (?root=<pc>&quality=major|minor): preselect that
+    // chord silently — browsers block audio before a user gesture.
+    const params = new URLSearchParams(window.location.search)
+    const start = triadAt(Number(params.get('root')), params.get('quality'))
+    if (params.has('root') && start) this.select(start, { play: false })
   }
 
   disconnect() {
@@ -33,10 +38,10 @@ export default class extends Controller {
     return this.audioCtx
   }
 
-  select(triad) {
+  select(triad, { play = true } = {}) {
     this.selected = triad
     this.scene.setSelection(triad, neighbors(triad).map((n) => n.triad))
-    playMidis(this.ensureAudio(), triadMidis(triad), { harmonic: true })
+    if (play) playMidis(this.ensureAudio(), triadMidis(triad), { harmonic: true })
     this.renderInfo()
   }
 

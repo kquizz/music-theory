@@ -21,7 +21,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro', 'earTraining', 'quiz', 'scaleInfo', 'modes']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro', 'earTraining', 'quiz', 'scaleInfo', 'modes', 'tonnetzSwitch']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -544,6 +544,18 @@ export default class extends Controller {
     })
     ctx.restore()
     this.renderScaleInfo(scale)
+    this.placeTonnetzSwitch(canvas, circleCx + outerR, circleCy - outerR, rootPc, isMinorKey(key))
+  }
+
+  // Pins the Tonnetz button to the circle's top-right corner (canvas coords as
+  // percentages, so it tracks CSS scaling) and points it at the current key's
+  // tonic chord, which the Tonnetz page preselects.
+  placeTonnetzSwitch(canvas, x, y, rootPc, minor) {
+    if (!this.hasTonnetzSwitchTarget) return
+    const link = this.tonnetzSwitchTarget
+    link.style.left = `${(x / canvas.width) * 100}%`
+    link.style.top = `${(y / canvas.height) * 100}%`
+    link.href = `/tonnetz?root=${rootPc}&quality=${minor ? 'minor' : 'major'}`
   }
 
   // Beginner-friendly explainer under the controls; hidden outside scale mode.
