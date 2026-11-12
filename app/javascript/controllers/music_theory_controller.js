@@ -536,10 +536,10 @@ export default class extends Controller {
     const keyed = this.modeValue !== 'scale' || hasKeySignature(key) || !!relativePair(this.nameValue)
     circle.draw(ctx, circleCx, circleCy, {
       scalePcs: scale && scale.intervals.map((i) => (rootPc + i) % 12),
-      // Only diatonic scales have a key signature to light up; for blues,
-      // pentatonics etc. the tonic marker stays on the wedge you clicked.
+      // Only scales with a key signature (or a relative partner) light a wedge.
       highlightRoot: keyed ? parentMajorRoot(key) : null,
-      tonicRoot: this.rootValue,
+      // In scale mode the red root dot marks the root, so skip the orange marker.
+      tonicRoot: scale ? null : this.rootValue,
       tonicMinor: keyed && isMinorKey(key),
     })
     ctx.restore()
