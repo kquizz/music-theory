@@ -2,6 +2,7 @@ import { Controller } from '@hotwired/stimulus'
 import { INSTRUMENTS, defaultTuningKey, tuningStrings } from 'instruments/config'
 import { SCALES, stepPattern, relativePair } from 'theory/scales'
 import { circleShape } from 'theory/circle_shape'
+import { relativeModes } from 'theory/modes'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { diatonicChords } from 'theory/diatonic'
@@ -20,7 +21,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro', 'earTraining', 'quiz', 'scaleInfo']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro', 'earTraining', 'quiz', 'scaleInfo', 'modes']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -375,6 +376,32 @@ export default class extends Controller {
 
   // A clickable row of the current key's diatonic triads (scale mode, 7-note
   // scales only). Clicking one loads that chord on the same instrument.
+  // On a diatonic mode: the seven modes sharing these notes (G Ionian, A Dorian,
+  // ...). Clicking one moves the root and mode together; the notes stay put.
+  populateModes() {
+    if (!this.hasModesTarget) return
+    this.modesTarget.innerHTML = ''
+    if (this.modeValue !== 'scale') return
+    const current = this.nameValue === 'minor' ? 'aeolian' : this.nameValue
+    const pretty = (pc) => numberToNote(pc, this.accidental).replace('#', '♯').replace('b', '♭')
+    relativeModes(this.rootValue, this.nameValue).forEach((m) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      if (m.key === current) btn.classList.add('active')
+      btn.innerHTML = `<span class="roman">${pretty(m.pc)}</span><span class="chord">${m.name}</span>`
+      btn.addEventListener('click', () => this.selectMode(m))
+      this.modesTarget.appendChild(btn)
+    })
+  }
+
+  selectMode(m) {
+    this.rootValue = numberToNote(m.pc, this.accidental)
+    this.nameValue = m.key
+    this.rootTarget.value = this.rootValue
+    this.nameTarget.value = this.nameValue
+    this.update()
+  }
+
   populateDiatonic() {
     if (!this.hasDiatonicTarget) return
     this.diatonicTarget.innerHTML = ''
@@ -456,6 +483,7 @@ export default class extends Controller {
   }
 
   render() {
+    this.populateModes()
     this.populateDiatonic()
     this.populateProgressions()
     const config = this.effectiveConfig()
@@ -542,7 +570,13 @@ export default class extends Controller {
   // notes (outer ring = major version, inner = minor).
   pairRows() {
     const pair = relativePair(this.nameValue)
-    if (!pair) return []
+    if (!pair) {
+      // Other diatonic modes share their parent major scale's notes.
+      if (!hasKeySignature({ mode: this.modeValue, name: this.nameValue })) return []
+      const parentPc = noteToNumber(parentMajorRoot({ mode: this.modeValue, root: this.rootValue, name: this.nameValue }))
+      const parent = circle.CIRCLE.find((e) => noteToNumber(e.root) === parentPc)
+      return [['Same notes as', `${parent.major} Major (Ionian)`]]
+    }
     const pc = noteToNumber(this.rootValue)
     const isMinor = pair.minor === (this.nameValue === 'minor' ? 'aeolian' : this.nameValue)
     const entry = circle.CIRCLE.find((e) => noteToNumber(isMinor ? e.minorRoot : e.root) === pc)

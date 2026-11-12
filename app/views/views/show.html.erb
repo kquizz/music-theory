@@ -41,6 +41,8 @@
     </label>
   </div>
 
+  <div class="modes" data-music-theory-target="modes"></div>
+
   <div class="diatonic" data-music-theory-target="diatonic"></div>
 
   <div class="progressions" data-music-theory-target="progressions"></div>
@@ -66,17 +68,19 @@
     main { margin-top: 1.25rem !important; padding-left: 12px !important; padding-right: 12px !important; }
   }
 
-  .diatonic, .progressions { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
-  .diatonic:empty, .progressions:empty { display: none; }
-  .diatonic button, .progressions button {
+  .modes, .diatonic, .progressions { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
+  .modes:empty, .diatonic:empty, .progressions:empty { display: none; }
+  .modes button, .diatonic button, .progressions button {
     display: flex; flex-direction: column; align-items: center; min-width: 52px;
     padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
     background: #fafafa; cursor: pointer; font: inherit; line-height: 1.2;
   }
-  .diatonic button:hover, .progressions button:hover { background: #eef4ff; border-color: #8ec3ff; }
-  .diatonic button .roman, .progressions button .roman { font-weight: 600; font-size: 0.95em; }
-  .diatonic button .chord, .progressions button .chord { color: #555; font-size: 0.85em; }
+  .modes button:hover, .diatonic button:hover, .progressions button:hover { background: #eef4ff; border-color: #8ec3ff; }
+  .modes button .roman, .diatonic button .roman, .progressions button .roman { font-weight: 600; font-size: 0.95em; }
+  .modes button .chord, .diatonic button .chord, .progressions button .chord { color: #555; font-size: 0.85em; }
   .progressions button .roman { letter-spacing: 0.02em; }
+  .modes button.active { background: #eef4ff; border-color: #8ec3ff; }
+  .modes::before { content: 'Same notes:'; align-self: center; color: #777; font-size: 0.85rem; }
   .progressions { border-top: 1px solid #eee; padding-top: 10px; }
 
   .scale-info { margin: 8px 0 12px; padding: 8px 12px; border-left: 3px solid #8ec3ff; background: #f6faff; font-size: 0.9rem; line-height: 1.6; max-width: 620px; }
