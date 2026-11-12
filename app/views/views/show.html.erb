@@ -45,6 +45,11 @@
 
   <div class="quiz" data-music-theory-target="quiz" hidden></div>
 
+  <div class="canvas-wrap">
+    <canvas data-music-theory-target="canvas"></canvas>
+    <a class="circle-switch" data-music-theory-target="tonnetzSwitch" href="/tonnetz" title="See this key's chord on the Tonnetz donut">🍩 Tonnetz view</a>
+  </div>
+
   <div class="sections">
     <details data-section="about">
       <summary>About this scale</summary>
@@ -65,11 +70,6 @@
       <summary>Progressions</summary>
       <div class="progressions" data-music-theory-target="progressions"></div>
     </details>
-  </div>
-
-  <div class="canvas-wrap">
-    <canvas data-music-theory-target="canvas"></canvas>
-    <a class="circle-switch" data-music-theory-target="tonnetzSwitch" href="/tonnetz" title="See this key's chord on the Tonnetz donut">🍩 Tonnetz view</a>
   </div>
 </div>
 
@@ -102,7 +102,7 @@
   .modes button .chord, .diatonic button .chord, .progressions button .chord { color: #555; font-size: 0.85em; }
   .progressions button .roman { letter-spacing: 0.02em; }
   .modes button.active { background: #eef4ff; border-color: #8ec3ff; }
-  .sections { margin: 8px 0 12px; max-width: 900px; }
+  .sections { margin: 20px 0 24px; max-width: 900px; border-top: 1px solid #eee; }
   .sections details { border-bottom: 1px solid #eee; }
   .sections details:has(> div:empty), .sections details:has(> div[hidden]) { display: none; }
   .sections summary { cursor: pointer; padding: 6px 0; color: #444; font-size: 0.9rem; font-weight: 600; user-select: none; }
