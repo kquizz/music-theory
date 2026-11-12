@@ -1,0 +1,56 @@
+<div id="tonnetz" data-controller="tonnetz">
+  <div class="tn-head">
+    <a href="/" class="tn-back">← Back</a>
+    <h1>Tonnetz</h1>
+  </div>
+
+  <p class="tn-explainer">
+    The Tonnetz lays out all 12 notes on a grid where moving one way adds a major third and the other way adds a minor third.
+    Wrap the grid into a donut: major thirds go around the tube, minor thirds go around the ring.
+    A perfect fifth is one step along the diagonal, so following fifths spirals around the donut and visits every note before closing &mdash; the circle of fifths becomes a coil.
+    Every triangle is a major or minor chord, and triangles that touch along an edge share two notes, so neighboring chords are close in sound.
+    Drag to rotate, click a triangle to hear it, or hit Unroll to flatten the donut back into the grid.
+  </p>
+
+  <div class="tn-layout">
+    <div class="tn-stage" data-tonnetz-target="stage"></div>
+
+    <aside class="tn-panel">
+      <div class="tn-buttons">
+        <button type="button" data-tonnetz-target="fifths" aria-pressed="false" data-action="click->tonnetz#toggleFifths">Circle of fifths</button>
+        <button type="button" data-tonnetz-target="unroll" data-action="click->tonnetz#toggleUnroll">Unroll</button>
+      </div>
+      <h2 data-tonnetz-target="name"></h2>
+      <div class="tn-neighbors" data-tonnetz-target="neighbors"></div>
+      <p class="tn-legend"><span class="sw major"></span> major <span class="sw minor"></span> minor</p>
+    </aside>
+  </div>
+</div>
+
+<style>
+  #tonnetz { flex: 1 1 auto; min-width: 0; width: 100%; }
+  .tn-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 6px; }
+  .tn-head h1 { font-size: 1.4rem; font-weight: 600; margin: 0; }
+  .tn-back { color: #2563eb; text-decoration: none; }
+  .tn-back:hover { text-decoration: underline; }
+  .tn-explainer { max-width: 62rem; color: #444; font-size: 0.92rem; line-height: 1.5; margin: 0 0 12px; }
+  .tn-layout { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
+  .tn-stage { flex: 1 1 520px; min-width: 0; height: 520px; border-radius: 10px; background: #12141c; overflow: hidden; }
+  .tn-panel { flex: 0 1 300px; min-width: 240px; display: flex; flex-direction: column; gap: 10px; }
+  .tn-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tn-buttons button, .tn-neighbors button {
+    font: inherit; padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px; background: #fafafa; cursor: pointer;
+  }
+  .tn-buttons button.on { background: #ffe066; border-color: #d4a900; }
+  .tn-panel h2 { font-size: 1.15rem; font-weight: 600; margin: 4px 0 0; min-height: 1.5em; }
+  .tn-neighbors { display: flex; flex-direction: column; gap: 6px; }
+  .tn-neighbors button { text-align: left; font-size: 0.88rem; }
+  .tn-neighbors button.major { border-left: 4px solid #f0903a; }
+  .tn-neighbors button.minor { border-left: 4px solid #3d8fe0; }
+  .tn-neighbors button:hover { background: #eee; }
+  .tn-legend { font-size: 0.8rem; color: #666; margin: 0; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 2px 0 8px; }
+  .sw.major { background: #f0903a; }
+  .sw.minor { background: #3d8fe0; }
+  @media (max-width: 640px) { .tn-stage { height: 380px; flex-basis: 100%; } }
+</style>

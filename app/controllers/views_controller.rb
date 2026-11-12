@@ -18,6 +18,8 @@ class ViewsController < ApplicationController
     redirect_to(root_path) and return unless valid_state?
   end
 
+  def tonnetz; end
+
   private
 
   def valid_state?
