@@ -47,6 +47,8 @@
 
   <div class="quiz" data-music-theory-target="quiz" hidden></div>
 
+  <div class="scale-info" data-music-theory-target="scaleInfo" hidden></div>
+
   <canvas data-music-theory-target="canvas"></canvas>
 </div>
 
@@ -76,6 +78,10 @@
   .diatonic button .chord, .progressions button .chord { color: #555; font-size: 0.85em; }
   .progressions button .roman { letter-spacing: 0.02em; }
   .progressions { border-top: 1px solid #eee; padding-top: 10px; }
+
+  .scale-info { margin: 8px 0 12px; padding: 8px 12px; border-left: 3px solid #8ec3ff; background: #f6faff; font-size: 0.9rem; line-height: 1.6; max-width: 620px; }
+  .scale-info[hidden] { display: none; }
+  .scale-info strong { display: inline-block; min-width: 7.5em; color: #555; font-weight: 600; }
 
   .quiz { margin: 10px 0; padding: 14px; border: 1px solid #e2e2e2; border-radius: 10px; max-width: 620px; }
   .quiz[hidden] { display: none; }

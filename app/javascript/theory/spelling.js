@@ -42,10 +42,19 @@ const PARENT_OFFSET = {
   major: 0, lydian: 7, mixolydian: 5, dorian: 10, aeolian: 3, minor: 3, phrygian: 8, locrian: 1,
 }
 
+// Semitones from the tonic to the major key to highlight on the circle. Diatonic
+// modes use their parent; other minor-family scales use the relative major (+3);
+// everything else sits on the tonic.
+function parentOffset(mode, name) {
+  if (mode !== 'scale') return 0
+  if (PARENT_OFFSET[name] != null) return PARENT_OFFSET[name]
+  return MINOR_SCALES.has(name) ? 3 : 0
+}
+
 // The (sharp-spelled) root of the major key whose signature this scale uses. For
-// non-diatonic scales / chords with no clean parent, falls back to the tonic.
+// non-diatonic scales / chords with no clean parent, see parentOffset.
 export function parentMajorRoot({ mode, root, name }) {
-  const offset = mode === 'scale' && PARENT_OFFSET[name] != null ? PARENT_OFFSET[name] : 0
+  const offset = parentOffset(mode, name)
   return numberToNote(normalize(noteToNumber(root) + offset), 'sharp')
 }
 

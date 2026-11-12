@@ -1,6 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 import { INSTRUMENTS, defaultTuningKey, tuningStrings } from 'instruments/config'
-import { SCALES } from 'theory/scales'
+import { SCALES, stepPattern } from 'theory/scales'
+import { circleShape } from 'theory/circle_shape'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
 import { diatonicChords } from 'theory/diatonic'
@@ -19,7 +20,7 @@ import * as circle from 'renderers/circle_of_fifths_renderer'
 const RENDERERS = { fretboard: fretboard.draw, keyboard: keyboard.draw, brass: fingering.draw }
 
 export default class extends Controller {
-  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro', 'earTraining', 'quiz']
+  static targets = ['canvas', 'instrument', 'mode', 'root', 'name', 'accidental', 'octaves', 'labels', 'tuning', 'diatonic', 'progressions', 'play', 'tempo', 'tempoLabel', 'loop', 'metro', 'earTraining', 'quiz', 'scaleInfo']
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
@@ -55,8 +56,8 @@ export default class extends Controller {
     this.stopMetronome()
   }
 
-  // Clicking a key on the always-visible circle jumps the app to that key's scale
-  // (outer ring = major, inner ring = relative minor).
+  // Clicking a key on the always-visible circle moves the root (outer ring = major
+  // key, inner ring = relative minor). Outside scale mode it also picks major/minor.
   onCanvasClick(event) {
     const canvas = this.canvasTarget
     const rect = canvas.getBoundingClientRect()
@@ -68,9 +69,13 @@ export default class extends Controller {
     const center = this.circleCenter || { cx: 700, cy: 300 }
     const hit = circle.hitTest(mx - center.cx, my - center.cy)
     if (!hit) return
-    this.modeValue = 'scale'
     this.rootValue = hit.isMinor ? hit.entry.minorRoot : hit.entry.root
-    this.nameValue = hit.isMinor ? 'aeolian' : 'major'
+    // In scale mode keep the current scale (only the root moves); otherwise
+    // jump to that key's major/minor scale.
+    if (this.modeValue !== 'scale') {
+      this.modeValue = 'scale'
+      this.nameValue = hit.isMinor ? 'aeolian' : 'major'
+    }
     this.modeTarget.value = 'scale'
     this.rootTarget.value = this.rootValue
     this.populateNameOptions()
@@ -495,12 +500,36 @@ export default class extends Controller {
 
     // Circle of fifths (right, beside the staff): parent-key wedge + tonic marker.
     ctx.save()
+    const scale = this.modeValue === 'scale' ? SCALES[this.nameValue] : null
+    const rootPc = noteToNumber(this.rootValue)
     circle.draw(ctx, circleCx, circleCy, {
+      scalePcs: scale && scale.intervals.map((i) => (rootPc + i) % 12),
+      rootPc,
       highlightRoot: parentMajorRoot({ mode: this.modeValue, root: this.rootValue, name: this.nameValue }),
       tonicRoot: this.rootValue,
       tonicMinor: isMinorKey({ mode: this.modeValue, name: this.nameValue }),
     })
     ctx.restore()
+    this.renderScaleInfo(scale)
+  }
+
+  // Beginner-friendly explainer under the controls; hidden outside scale mode.
+  renderScaleInfo(scale) {
+    if (!this.hasScaleInfoTarget) return
+    this.scaleInfoTarget.hidden = !scale
+    if (!scale) return
+    const rows = [
+      ['What it is', scale.formula],
+      ['Step pattern', stepPattern(scale.intervals)],
+      ['On the circle', circleShape(scale.intervals)],
+    ]
+    this.scaleInfoTarget.replaceChildren(...rows.map(([label, text]) => {
+      const row = document.createElement('div')
+      const b = document.createElement('strong')
+      b.textContent = label
+      row.append(b, ` ${text}`)
+      return row
+    }))
   }
 
   pushUrl() {

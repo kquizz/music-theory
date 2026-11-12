@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defaultAccidental, keySignature } from 'theory/spelling'
+import { defaultAccidental, keySignature, parentMajorRoot } from 'theory/spelling'
 
 describe('defaultAccidental', () => {
   it('uses sharps for sharp-side major keys/chords', () => {
@@ -34,6 +34,35 @@ describe('defaultAccidental', () => {
   it('notes mode uses the root major key spelling', () => {
     expect(defaultAccidental({ mode: 'notes', root: 'F', name: '' })).toBe('flat')
     expect(defaultAccidental({ mode: 'notes', root: 'G', name: '' })).toBe('sharp')
+  })
+})
+
+describe('parentMajorRoot', () => {
+  const parent = (root, name) => parentMajorRoot({ mode: 'scale', root, name })
+
+  it('minor-family scales without a diatonic parent use the relative major', () => {
+    expect(parent('A', 'blues')).toBe('C')
+    expect(parent('A', 'minor_pentatonic')).toBe('C')
+    expect(parent('A', 'harmonic_minor')).toBe('C')
+    expect(parent('A', 'melodic_minor')).toBe('C')
+    expect(parent('A', 'hungarian_minor')).toBe('C')
+    expect(parent('C', 'blues')).toBe('D#')
+  })
+
+  it('major-family and symmetric scales stay on the tonic', () => {
+    expect(parent('A', 'major_pentatonic')).toBe('A')
+    expect(parent('A', 'major_blues')).toBe('A')
+    expect(parent('A', 'whole_tone')).toBe('A')
+  })
+
+  it('keeps diatonic parents unchanged', () => {
+    expect(parent('A', 'aeolian')).toBe('C')
+    expect(parent('C', 'mixolydian')).toBe('F')
+  })
+
+  it('spells blues via the relative major', () => {
+    expect(defaultAccidental({ mode: 'scale', root: 'A', name: 'blues' })).toBe('sharp')
+    expect(defaultAccidental({ mode: 'scale', root: 'C', name: 'blues' })).toBe('flat')
   })
 })
 

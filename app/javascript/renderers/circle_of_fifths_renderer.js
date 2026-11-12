@@ -1,3 +1,5 @@
+import { noteToNumber } from 'theory/notes'
+
 // Circle of fifths, clockwise from 12 o'clock. `root`/`minorRoot` are the app's
 // (sharp-spelled) root values to navigate to; `major`/`minor` are display labels
 // using conventional key spelling; `sig` is the key signature.
@@ -52,8 +54,10 @@ function wedge(ctx, cx, cy, rOuter, rInner, a0, a1, fill) {
 // Draws the wheel centered at (cx, cy). Lights the parent-key wedge
 // (`highlightRoot`, a major key) blue to show the key signature, and puts an
 // orange tonic marker on the note you picked (outer major, or inner minor when
-// `tonicMinor`).
-export function draw(ctx, cx, cy, { highlightRoot, tonicRoot, tonicMinor = false } = {}) {
+// `tonicMinor`). With `scalePcs` (pitch classes 0-11) it also dots each outer
+// wedge whose major root is in the scale (the `rootPc` dot stands out), joined by
+// a faint arc where neighbors touch.
+export function draw(ctx, cx, cy, { highlightRoot, tonicRoot, tonicMinor = false, scalePcs, rootPc } = {}) {
   const { outerR, boundaryR, holeR } = R
   const seg = (Math.PI * 2) / 12
   const majorR = (outerR + boundaryR) / 2
@@ -93,5 +97,33 @@ export function draw(ctx, cx, cy, { highlightRoot, tonicRoot, tonicMinor = false
     ctx.fillText(entry.minor, px(minorR), py(minorR))
   })
 
+  if (scalePcs) drawScaleDots(ctx, cx, cy, scalePcs, rootPc)
+
   ctx.restore()
+}
+
+// Dots sit near the outer edge, clear of the key label and signature text.
+function drawScaleDots(ctx, cx, cy, scalePcs, rootPc) {
+  const seg = (Math.PI * 2) / 12
+  const dotR = R.outerR - 6
+  const on = CIRCLE.map((entry) => scalePcs.includes(noteToNumber(entry.root)))
+  const angle = (i) => i * seg - Math.PI / 2
+
+  ctx.strokeStyle = '#9aa0a6'
+  ctx.lineWidth = 1.5
+  on.forEach((isOn, i) => {
+    if (!isOn || !on[(i + 1) % 12]) return
+    ctx.beginPath()
+    ctx.arc(cx, cy, dotR, angle(i), angle(i) + seg)
+    ctx.stroke()
+  })
+
+  CIRCLE.forEach((entry, i) => {
+    if (!on[i]) return
+    const isRoot = noteToNumber(entry.root) === rootPc
+    ctx.fillStyle = isRoot ? '#d9731a' : '#444'
+    ctx.beginPath()
+    ctx.arc(cx + dotR * Math.sin(i * seg), cy - dotR * Math.cos(i * seg), isRoot ? 5 : 3.5, 0, Math.PI * 2)
+    ctx.fill()
+  })
 }
