@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { scaleNotes, SCALES, stepPattern } from 'theory/scales'
+import { relativePair } from 'theory/scales'
 import { circleShape } from 'theory/circle_shape'
 
 const semis = (root, key) => scaleNotes(root, key).map((n) => n.semitone)
@@ -115,5 +116,23 @@ describe('circleShape', () => {
     expect(circleShape([0, 3, 6, 9])).toBe('4 single notes, spread evenly around the circle')
     expect(shape('diminished_wh')).toBe('4 pairs, spread evenly around the circle')
     expect(shape('diminished_hw')).toBe('4 pairs, spread evenly around the circle')
+  })
+})
+
+describe('relativePair', () => {
+  it('pairs major/minor, blues and pentatonics', () => {
+    expect(relativePair('blues')).toEqual({ major: 'major_blues', minor: 'blues' })
+    expect(relativePair('major_pentatonic')).toEqual({ major: 'major_pentatonic', minor: 'minor_pentatonic' })
+    expect(relativePair('minor')).toEqual({ major: 'major', minor: 'aeolian' })
+    expect(relativePair('dorian')).toBeNull()
+  })
+
+  it('pairs share every note when the minor root is 3 semitones lower', () => {
+    for (const key of ['blues', 'major_blues', 'minor_pentatonic', 'aeolian']) {
+      const { major, minor } = relativePair(key)
+      const maj = SCALES[major].intervals.map((i) => (i + 3) % 12).sort((a, b) => a - b)
+      const min = [...SCALES[minor].intervals].sort((a, b) => a - b)
+      expect(maj).toEqual(min)
+    }
   })
 })

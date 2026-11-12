@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus'
 import { INSTRUMENTS, defaultTuningKey, tuningStrings } from 'instruments/config'
-import { SCALES, stepPattern } from 'theory/scales'
+import { SCALES, stepPattern, relativePair } from 'theory/scales'
 import { circleShape } from 'theory/circle_shape'
 import { CHORDS } from 'theory/chords'
 import { noteSet } from 'theory/note_set'
@@ -70,12 +70,12 @@ export default class extends Controller {
     const hit = circle.hitTest(mx - center.cx, my - center.cy)
     if (!hit) return
     this.rootValue = hit.isMinor ? hit.entry.minorRoot : hit.entry.root
-    // In scale mode keep the current scale (only the root moves); otherwise
-    // jump to that key's major/minor scale.
-    if (this.modeValue !== 'scale') {
-      this.modeValue = 'scale'
-      this.nameValue = hit.isMinor ? 'aeolian' : 'major'
-    }
+    // Paired scales (major/minor, blues, pentatonic) take their side from the
+    // ring: outer = major version, inner = minor. Other scales keep the scale and
+    // only move the root. Outside scale mode, jump to major/minor.
+    const pair = this.modeValue === 'scale' ? relativePair(this.nameValue) : relativePair('major')
+    if (pair) this.nameValue = hit.isMinor ? pair.minor : pair.major
+    this.modeValue = 'scale'
     this.modeTarget.value = 'scale'
     this.rootTarget.value = this.rootValue
     this.populateNameOptions()
@@ -504,7 +504,8 @@ export default class extends Controller {
     const rootPc = noteToNumber(this.rootValue)
     const key = { mode: this.modeValue, root: this.rootValue, name: this.nameValue }
     // Chords keep their old highlight; scales only when they have a signature.
-    const keyed = this.modeValue !== 'scale' || hasKeySignature(key)
+    // Paired scales light the wedge they share with their partner.
+    const keyed = this.modeValue !== 'scale' || hasKeySignature(key) || !!relativePair(this.nameValue)
     circle.draw(ctx, circleCx, circleCy, {
       scalePcs: scale && scale.intervals.map((i) => (rootPc + i) % 12),
       // Only diatonic scales have a key signature to light up; for blues,
@@ -526,7 +527,7 @@ export default class extends Controller {
       ['What it is', scale.formula],
       ['Step pattern', stepPattern(scale.intervals)],
       ['On the circle', circleShape(scale.intervals)],
-      ['Dots', 'Notes in this scale, colored like the notes above (red = root). The line joins notes a fifth apart.'],
+      ...this.pairRows(),
     ]
     this.scaleInfoTarget.replaceChildren(...rows.map(([label, text]) => {
       const row = document.createElement('div')
@@ -535,6 +536,18 @@ export default class extends Controller {
       row.append(b, ` ${text}`)
       return row
     }))
+  }
+
+  // For paired scales: the partner on the same wedge that uses exactly the same
+  // notes (outer ring = major version, inner = minor).
+  pairRows() {
+    const pair = relativePair(this.nameValue)
+    if (!pair) return []
+    const pc = noteToNumber(this.rootValue)
+    const isMinor = pair.minor === (this.nameValue === 'minor' ? 'aeolian' : this.nameValue)
+    const entry = circle.CIRCLE.find((e) => noteToNumber(isMinor ? e.minorRoot : e.root) === pc)
+    const partner = isMinor ? `${entry.major} ${SCALES[pair.major].name}` : `${entry.minor.replace(/m$/, '')} ${SCALES[pair.minor].name}`
+    return [['Same notes as', partner]]
   }
 
   pushUrl() {

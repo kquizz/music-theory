@@ -27,6 +27,21 @@ export const SCALES = {
   hungarian_minor: { name: 'Hungarian Minor', formula: 'Harmonic minor with a ♯4', intervals: [0, 2, 3, 6, 7, 8, 11] },
 }
 
+// Major/minor scales that share all their notes when the minor one starts a
+// minor 3rd below (C major = A minor, C major blues = A minor blues). On the
+// circle these pair up like relative keys: outer ring major, inner ring minor.
+const RELATIVE_PAIRS = [
+  { major: 'major', minor: 'aeolian' },
+  { major: 'major_blues', minor: 'blues' },
+  { major: 'major_pentatonic', minor: 'minor_pentatonic' },
+]
+
+// Pure: the { major, minor } pair this scale belongs to, or null.
+export function relativePair(scaleKey) {
+  const key = scaleKey === 'minor' ? 'aeolian' : scaleKey
+  return RELATIVE_PAIRS.find((p) => p.major === key || p.minor === key) || null
+}
+
 export function scaleNotes(root, scaleKey) {
   const scale = SCALES[scaleKey]
   if (!scale) throw new Error(`Unknown scale: ${scaleKey}`)
