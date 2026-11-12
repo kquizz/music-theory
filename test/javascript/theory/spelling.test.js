@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defaultAccidental, keySignature, parentMajorRoot } from 'theory/spelling'
+import { defaultAccidental, keySignature, parentMajorRoot, hasKeySignature as hasSig } from 'theory/spelling'
 
 describe('defaultAccidental', () => {
   it('uses sharps for sharp-side major keys/chords', () => {
@@ -97,5 +97,15 @@ describe('keySignature', () => {
     expect(keySignature({ mode: 'chord', root: 'G', name: 'maj7' })).toEqual({ type: 'sharp', letters: [] })
     expect(keySignature({ mode: 'notes', root: 'F', name: '' })).toEqual({ type: 'sharp', letters: [] })
     expect(keySignature({ mode: 'scale', root: 'C', name: 'blues' })).toEqual({ type: 'sharp', letters: [] })
+  })
+})
+
+describe('hasKeySignature', () => {
+  it('is true for major, minor and the modes', () => {
+    for (const name of ['major', 'aeolian', 'minor', 'dorian', 'locrian']) expect(hasSig({ mode: 'scale', name })).toBe(true)
+  })
+  it('is false for blues, pentatonics and chords', () => {
+    for (const name of ['blues', 'major_pentatonic', 'harmonic_minor']) expect(hasSig({ mode: 'scale', name })).toBe(false)
+    expect(hasSig({ mode: 'chord', name: 'maj' })).toBe(false)
   })
 })

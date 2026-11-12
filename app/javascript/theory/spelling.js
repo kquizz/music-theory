@@ -51,6 +51,12 @@ function parentOffset(mode, name) {
   return MINOR_SCALES.has(name) ? 3 : 0
 }
 
+// Whether this view has a real key signature (major, minor and the diatonic
+// modes). Blues, pentatonics etc. don't, so the circle shouldn't claim one.
+export function hasKeySignature({ mode, name }) {
+  return mode === 'scale' && PARENT_OFFSET[name] != null
+}
+
 // The (sharp-spelled) root of the major key whose signature this scale uses. For
 // non-diatonic scales / chords with no clean parent, see parentOffset.
 export function parentMajorRoot({ mode, root, name }) {

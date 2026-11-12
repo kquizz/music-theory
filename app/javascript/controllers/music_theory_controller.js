@@ -8,7 +8,7 @@ import { diatonicChords } from 'theory/diatonic'
 import { PROGRESSIONS, progressionChords } from 'theory/progressions'
 import { EAR_INTERVALS, EAR_CHORDS, intervalMidis, chordMidis } from 'theory/ear_training'
 import { play, playNote, playChordSequence, playMidis, beatSeconds, playbackDuration, metronomeClick } from 'audio/player'
-import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature } from 'theory/spelling'
+import { defaultAccidental, isMinorKey, parentMajorRoot, keySignature, hasKeySignature } from 'theory/spelling'
 import { numberToNote, noteToNumber } from 'theory/notes'
 import * as fretboard from 'renderers/fretboard_renderer'
 import * as keyboard from 'renderers/keyboard_renderer'
@@ -502,12 +502,16 @@ export default class extends Controller {
     ctx.save()
     const scale = this.modeValue === 'scale' ? SCALES[this.nameValue] : null
     const rootPc = noteToNumber(this.rootValue)
+    const key = { mode: this.modeValue, root: this.rootValue, name: this.nameValue }
+    // Chords keep their old highlight; scales only when they have a signature.
+    const keyed = this.modeValue !== 'scale' || hasKeySignature(key)
     circle.draw(ctx, circleCx, circleCy, {
       scalePcs: scale && scale.intervals.map((i) => (rootPc + i) % 12),
-      rootPc,
-      highlightRoot: parentMajorRoot({ mode: this.modeValue, root: this.rootValue, name: this.nameValue }),
+      // Only diatonic scales have a key signature to light up; for blues,
+      // pentatonics etc. the tonic marker stays on the wedge you clicked.
+      highlightRoot: keyed ? parentMajorRoot(key) : null,
       tonicRoot: this.rootValue,
-      tonicMinor: isMinorKey({ mode: this.modeValue, name: this.nameValue }),
+      tonicMinor: keyed && isMinorKey(key),
     })
     ctx.restore()
     this.renderScaleInfo(scale)
@@ -522,6 +526,7 @@ export default class extends Controller {
       ['What it is', scale.formula],
       ['Step pattern', stepPattern(scale.intervals)],
       ['On the circle', circleShape(scale.intervals)],
+      ['Dots', 'Notes in this scale, colored like the notes above (red = root). The line joins notes a fifth apart.'],
     ]
     this.scaleInfoTarget.replaceChildren(...rows.map(([label, text]) => {
       const row = document.createElement('div')
