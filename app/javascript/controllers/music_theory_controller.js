@@ -25,6 +25,7 @@ export default class extends Controller {
   static values = { instrument: String, mode: String, root: String, name: String }
 
   connect() {
+    this.restoreSections()
     this.octaves = 1
     this.labelMode = 'names'
     this.bpm = 120
@@ -544,10 +545,22 @@ export default class extends Controller {
     })
     ctx.restore()
     this.renderScaleInfo(scale)
-    this.placeTonnetzSwitch(canvas, circleCx + outerR, circleCy - outerR, rootPc, isMinorKey(key))
+    this.placeTonnetzSwitch(canvas, circleCx + outerR, circleCy + outerR - 2, rootPc, isMinorKey(key))
   }
 
-  // Pins the Tonnetz button to the circle's top-right corner (canvas coords as
+  // The collapsible sections (About / Modes / Chords / Progressions) start closed
+  // and remember which ones this viewer opened. Storage can be unavailable.
+  restoreSections() {
+    this.element.querySelectorAll('details[data-section]').forEach((d) => {
+      const key = `section:${d.dataset.section}`
+      try { d.open = localStorage.getItem(key) === 'open' } catch {}
+      d.addEventListener('toggle', () => {
+        try { localStorage.setItem(key, d.open ? 'open' : 'closed') } catch {}
+      })
+    })
+  }
+
+  // Pins the Tonnetz button just under the circle's bottom-right edge (canvas coords as
   // percentages, so it tracks CSS scaling) and points it at the current key's
   // tonic chord, which the Tonnetz page preselects.
   placeTonnetzSwitch(canvas, x, y, rootPc, minor) {

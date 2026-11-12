@@ -43,15 +43,29 @@
     <a class="tonnetz-link" href="/tonnetz">🍩 Tonnetz</a>
   </div>
 
-  <div class="modes" data-music-theory-target="modes"></div>
-
-  <div class="diatonic" data-music-theory-target="diatonic"></div>
-
-  <div class="progressions" data-music-theory-target="progressions"></div>
-
   <div class="quiz" data-music-theory-target="quiz" hidden></div>
 
-  <div class="scale-info" data-music-theory-target="scaleInfo" hidden></div>
+  <div class="sections">
+    <details data-section="about">
+      <summary>About this scale</summary>
+      <div class="scale-info" data-music-theory-target="scaleInfo" hidden></div>
+    </details>
+
+    <details data-section="modes">
+      <summary>Modes (same notes)</summary>
+      <div class="modes" data-music-theory-target="modes"></div>
+    </details>
+
+    <details data-section="chords">
+      <summary>Chords in this key</summary>
+      <div class="diatonic" data-music-theory-target="diatonic"></div>
+    </details>
+
+    <details data-section="progressions">
+      <summary>Progressions</summary>
+      <div class="progressions" data-music-theory-target="progressions"></div>
+    </details>
+  </div>
 
   <div class="canvas-wrap">
     <canvas data-music-theory-target="canvas"></canvas>
@@ -88,8 +102,12 @@
   .modes button .chord, .diatonic button .chord, .progressions button .chord { color: #555; font-size: 0.85em; }
   .progressions button .roman { letter-spacing: 0.02em; }
   .modes button.active { background: #eef4ff; border-color: #8ec3ff; }
-  .modes::before { content: 'Same notes:'; align-self: center; color: #777; font-size: 0.85rem; }
-  .progressions { border-top: 1px solid #eee; padding-top: 10px; }
+  .sections { margin: 8px 0 12px; max-width: 900px; }
+  .sections details { border-bottom: 1px solid #eee; }
+  .sections details:has(> div:empty), .sections details:has(> div[hidden]) { display: none; }
+  .sections summary { cursor: pointer; padding: 6px 0; color: #444; font-size: 0.9rem; font-weight: 600; user-select: none; }
+  .sections summary:hover { color: #111; }
+  .sections details > div { margin-top: 2px; }
 
   .scale-info { margin: 8px 0 12px; padding: 8px 12px; border-left: 3px solid #8ec3ff; background: #f6faff; font-size: 0.9rem; line-height: 1.6; max-width: 620px; }
   .scale-info[hidden] { display: none; }
